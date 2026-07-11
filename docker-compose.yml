@@ -1,0 +1,15 @@
+services:
+  oc-kindergarten:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: oc-kindergarten:dev
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+    ports:
+      - "${HOST_PORT:-3108}:3000"
