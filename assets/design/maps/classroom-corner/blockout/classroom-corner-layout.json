@@ -1,0 +1,375 @@
+{
+  "map_id": "classroom-corner-blockout-v1",
+  "status": "layout_blockout",
+  "visual_asset_source": "procedural_placeholder",
+  "map_mode": "tile_mode",
+  "visual_model": "layered_tilemap",
+  "runtime_object_model": [
+    "interactive_scene_objects",
+    "scene_hooks"
+  ],
+  "collision_model": [
+    "tile_collision",
+    "trigger_zones"
+  ],
+  "engine_target": "project-native",
+  "canvas_px": [
+    512,
+    288
+  ],
+  "tile_size_px": 32,
+  "grid_tiles": [
+    16,
+    9
+  ],
+  "perspective": "front-facing 3/4 interior blockout",
+  "zones": [
+    {
+      "id": "wall",
+      "rect_tiles": [
+        0,
+        0,
+        16,
+        2
+      ],
+      "walkable": false
+    },
+    {
+      "id": "reading_corner",
+      "rect_tiles": [
+        0,
+        2,
+        6,
+        5
+      ],
+      "walkable": "mixed"
+    },
+    {
+      "id": "center_corridor",
+      "rect_tiles": [
+        6,
+        2,
+        4,
+        4
+      ],
+      "walkable": true
+    },
+    {
+      "id": "block_corner",
+      "rect_tiles": [
+        10,
+        2,
+        6,
+        4
+      ],
+      "walkable": "mixed"
+    },
+    {
+      "id": "main_walkway",
+      "rect_tiles": [
+        0,
+        6,
+        16,
+        3
+      ],
+      "walkable": true
+    }
+  ],
+  "objects": [
+    {
+      "id": "reading-bookshelf",
+      "type": "bookshelf",
+      "rect_tiles": [
+        1,
+        2,
+        4,
+        1
+      ],
+      "collision": true,
+      "render_layer": "wall_props"
+    },
+    {
+      "id": "reading-book-bin",
+      "type": "book_bin",
+      "rect_tiles": [
+        1,
+        3,
+        2,
+        1
+      ],
+      "collision": true,
+      "render_layer": "floor_props"
+    },
+    {
+      "id": "reading-rug",
+      "type": "rug",
+      "rect_tiles": [
+        1,
+        4,
+        5,
+        3
+      ],
+      "collision": false,
+      "render_layer": "floor_detail"
+    },
+    {
+      "id": "block-table",
+      "type": "activity_table",
+      "rect_tiles": [
+        11,
+        3,
+        3,
+        2
+      ],
+      "collision": true,
+      "render_layer": "floor_props"
+    },
+    {
+      "id": "toy-bin",
+      "type": "toy_storage",
+      "rect_tiles": [
+        14,
+        3,
+        1,
+        2
+      ],
+      "collision": true,
+      "render_layer": "floor_props"
+    }
+  ],
+  "walkability": {
+    "encoding": "1=walkable, 0=blocked",
+    "rows": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ]
+  },
+  "actor_spawns": [
+    {
+      "id": "boy-reading-spawn",
+      "character": "boy",
+      "anchor_px": [
+        96,
+        232
+      ],
+      "source": "assets/design/sprites/characters/ai-agent-child-boy/idle/frames/idle-planted-boy-1.png",
+      "frame_top_left_px": [
+        72,
+        168
+      ],
+      "anchor_tile": [
+        3.0,
+        7.25
+      ]
+    },
+    {
+      "id": "girl-center-spawn",
+      "character": "girl",
+      "anchor_px": [
+        256,
+        232
+      ],
+      "source": "assets/design/sprites/characters/ai-agent-child-girl/idle/frames/idle-planted-girl-1.png",
+      "frame_top_left_px": [
+        232,
+        168
+      ],
+      "anchor_tile": [
+        8.0,
+        7.25
+      ]
+    },
+    {
+      "id": "neutral-block-spawn",
+      "character": "neutral",
+      "anchor_px": [
+        416,
+        232
+      ],
+      "source": "assets/design/sprites/characters/ai-agent-child-neutral/idle/frames/idle-planted-antenna-v7-wide38-1.png",
+      "frame_top_left_px": [
+        392,
+        168
+      ],
+      "anchor_tile": [
+        13.0,
+        7.25
+      ]
+    }
+  ],
+  "next_art_pass": {
+    "foundation": "floor, wall, corridor, and rug materials only",
+    "separate_props": [
+      "bookshelf",
+      "book_bin",
+      "activity_table",
+      "toy_storage"
+    ],
+    "do_not_bake": [
+      "characters",
+      "interactive props",
+      "collision blockers"
+    ]
+  },
+  "output": "assets/design/maps/classroom-corner/blockout/classroom-corner-layout-blockout-512x288.png"
+}

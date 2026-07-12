@@ -1,0 +1,213 @@
+{
+  "action": "planted idle synchronized trio preview",
+  "character_order": [
+    "boy",
+    "girl",
+    "neutral"
+  ],
+  "source_format": "transparent PNG frames",
+  "source_frame_size": [
+    48,
+    64
+  ],
+  "frame_count": 4,
+  "duration_ms": 360,
+  "gap_px": 8,
+  "canvas_size": [
+    160,
+    64
+  ],
+  "positions": [
+    [
+      0,
+      0
+    ],
+    [
+      56,
+      0
+    ],
+    [
+      112,
+      0
+    ]
+  ],
+  "alignment": "all source frames share y=0; feet remain on the same 64px frame baseline",
+  "native_gif": "assets/design/sprites/characters/trio/idle/kindergarten_ai_agent_trio_planted_idle_48x64.gif",
+  "preview_gif": "assets/design/sprites/characters/trio/idle/kindergarten_ai_agent_trio_planted_idle_preview_6x.gif",
+  "preview_scale": 6,
+  "preview_padding": [
+    4,
+    4,
+    4,
+    4
+  ],
+  "preview_background_rgba": [
+    224,
+    238,
+    240,
+    255
+  ],
+  "preview_ground_rgba": [
+    164,
+    185,
+    187,
+    255
+  ],
+  "first_frame": "assets/design/sprites/characters/trio/idle/kindergarten_ai_agent_trio_planted_idle_first_frame.png",
+  "sources": [
+    {
+      "character": "boy",
+      "frame_paths": [
+        "assets/design/sprites/characters/ai-agent-child-boy/idle/frames/idle-planted-boy-1.png",
+        "assets/design/sprites/characters/ai-agent-child-boy/idle/frames/idle-planted-boy-2.png",
+        "assets/design/sprites/characters/ai-agent-child-boy/idle/frames/idle-planted-boy-3.png",
+        "assets/design/sprites/characters/ai-agent-child-boy/idle/frames/idle-planted-boy-4.png"
+      ],
+      "durations_ms": [
+        360,
+        360,
+        360,
+        360
+      ],
+      "alpha_boxes": [
+        [
+          5,
+          4,
+          43,
+          63
+        ],
+        [
+          5,
+          4,
+          43,
+          63
+        ],
+        [
+          5,
+          4,
+          43,
+          63
+        ],
+        [
+          5,
+          4,
+          43,
+          63
+        ]
+      ]
+    },
+    {
+      "character": "girl",
+      "frame_paths": [
+        "assets/design/sprites/characters/ai-agent-child-girl/idle/frames/idle-planted-girl-1.png",
+        "assets/design/sprites/characters/ai-agent-child-girl/idle/frames/idle-planted-girl-2.png",
+        "assets/design/sprites/characters/ai-agent-child-girl/idle/frames/idle-planted-girl-3.png",
+        "assets/design/sprites/characters/ai-agent-child-girl/idle/frames/idle-planted-girl-4.png"
+      ],
+      "durations_ms": [
+        360,
+        360,
+        360,
+        360
+      ],
+      "alpha_boxes": [
+        [
+          5,
+          7,
+          43,
+          63
+        ],
+        [
+          5,
+          7,
+          43,
+          63
+        ],
+        [
+          5,
+          7,
+          43,
+          63
+        ],
+        [
+          5,
+          7,
+          43,
+          63
+        ]
+      ]
+    },
+    {
+      "character": "neutral",
+      "frame_paths": [
+        "assets/design/sprites/characters/ai-agent-child-neutral/idle/frames/idle-planted-antenna-v7-wide38-1.png",
+        "assets/design/sprites/characters/ai-agent-child-neutral/idle/frames/idle-planted-antenna-v7-wide38-2.png",
+        "assets/design/sprites/characters/ai-agent-child-neutral/idle/frames/idle-planted-antenna-v7-wide38-3.png",
+        "assets/design/sprites/characters/ai-agent-child-neutral/idle/frames/idle-planted-antenna-v7-wide38-4.png"
+      ],
+      "durations_ms": [
+        360,
+        360,
+        360,
+        360
+      ],
+      "alpha_boxes": [
+        [
+          5,
+          1,
+          43,
+          63
+        ],
+        [
+          5,
+          0,
+          43,
+          63
+        ],
+        [
+          5,
+          2,
+          43,
+          63
+        ],
+        [
+          5,
+          1,
+          43,
+          63
+        ]
+      ]
+    }
+  ],
+  "qc": {
+    "trio_alpha_boxes": [
+      [
+        5,
+        1,
+        155,
+        63
+      ],
+      [
+        5,
+        0,
+        155,
+        63
+      ],
+      [
+        5,
+        2,
+        155,
+        63
+      ],
+      [
+        5,
+        1,
+        155,
+        63
+      ]
+    ],
+    "all_sources_48x64": true,
+    "all_sources_four_frames": true,
+    "all_sources_360ms": true
+  }
+}
