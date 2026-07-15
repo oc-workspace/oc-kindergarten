@@ -13,7 +13,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 CHAR_DIR = (
     ROOT
-    / "assets/design/sprites/characters/ai-agent-child-genderless"
+    / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
 )
 WALK_DIR = CHAR_DIR / "walking/v1"
 PROCESSED_DIR = WALK_DIR / "processed-normalized-64"

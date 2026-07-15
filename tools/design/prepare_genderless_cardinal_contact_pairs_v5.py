@@ -14,7 +14,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 RUN_DIR = (
     ROOT
-    / "assets/design/sprites/characters/ai-agent-child-genderless"
+    / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
     / "walking/v5/cardinal-contact-pairs"
 )
 RAW_DIR = RUN_DIR / "raw"

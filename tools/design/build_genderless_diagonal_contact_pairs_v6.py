@@ -12,7 +12,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 CHARACTER_DIR = (
-    ROOT / "assets/design/sprites/characters/ai-agent-child-genderless"
+    ROOT / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
 )
 V3_FRAMES = CHARACTER_DIR / "walking/v3/frames"
 CARDINAL_FRAMES = CHARACTER_DIR / "walking/v5/cardinal-contact-pairs/frames"

@@ -42,10 +42,10 @@
 
 ## 当前定稿文件
 
-- 男孩：`assets/design/sprites/characters/ai-agent-child-boy/idle/`
-- 女孩：`assets/design/sprites/characters/ai-agent-child-girl/idle/`
-- 无性别孩子：`assets/design/sprites/characters/ai-agent-child-genderless/idle/`
-- 三人同步预览：`assets/design/sprites/characters/trio/idle/`
+- 男孩：`assets/design/sprites/characters/v1/ai-agent-child-boy/idle/`
+- 女孩：`assets/design/sprites/characters/v1/ai-agent-child-girl/idle/`
+- 无性别孩子：`assets/design/sprites/characters/v1/ai-agent-child-genderless/idle/`
+- 三人同步预览：`assets/design/sprites/characters/v1/trio/idle/`
 
 ## 后续状态
 

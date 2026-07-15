@@ -12,7 +12,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 WALK_DIR = (
     ROOT
-    / "assets/design/sprites/characters/ai-agent-child-genderless/walking/v1"
+    / "assets/design/sprites/characters/v1/ai-agent-child-genderless/walking/v1"
 )
 SOURCE = WALK_DIR / "raw/genderless-child-walk-4x4-magenta-safe-margin.png"
 OUTPUT = WALK_DIR / "raw/genderless-child-walk-4x4-magenta-normalized.png"

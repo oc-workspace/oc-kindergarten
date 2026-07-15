@@ -18,7 +18,7 @@ from build_genderless_walk_v1 import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CHAR_DIR = ROOT / "assets/design/sprites/characters/ai-agent-child-genderless"
+CHAR_DIR = ROOT / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
 V2_DIR = CHAR_DIR / "walking/v2"
 V3_DIR = CHAR_DIR / "walking/v3"
 CARDINAL_DIR = V3_DIR / "processed-cardinal-64"

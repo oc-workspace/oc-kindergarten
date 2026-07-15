@@ -1,0 +1,159 @@
+{
+  "character_id": "ai-agent-child-genderless",
+  "asset": "idle_and_static",
+  "revision": "v2-wheelbase",
+  "status": "approved",
+  "reference_concept": "assets/design/concepts/kindergarten-ai-agent-trio/kindergarten-ai-agent-trio-concept-v2-wheelbase.png",
+  "frame_size_px": [
+    48,
+    64
+  ],
+  "frame_duration_ms": 220,
+  "normalization": {
+    "method": "head-shell-top-to-wheel-bottom; accessories excluded",
+    "excluded_accessory": "antenna",
+    "reference_frame": 1,
+    "target_core_height_px": 50,
+    "reference_source_bbox": [
+      31,
+      10,
+      97,
+      121
+    ],
+    "reference_source_core_top": 25,
+    "reference_source_core_height": 96,
+    "scale": 0.5208333333333334,
+    "bottom_anchor_y": 62,
+    "frames": [
+      {
+        "source_bbox": [
+          31,
+          10,
+          97,
+          121
+        ],
+        "source_core_top": 25,
+        "source_core_height": 96,
+        "projected_core_height_px": 50,
+        "output_size_px": [
+          34,
+          58
+        ]
+      },
+      {
+        "source_bbox": [
+          31,
+          9,
+          97,
+          121
+        ],
+        "source_core_top": 25,
+        "source_core_height": 96,
+        "projected_core_height_px": 50,
+        "output_size_px": [
+          34,
+          58
+        ]
+      },
+      {
+        "source_bbox": [
+          31,
+          11,
+          96,
+          121
+        ],
+        "source_core_top": 26,
+        "source_core_height": 95,
+        "projected_core_height_px": 49,
+        "output_size_px": [
+          34,
+          57
+        ]
+      },
+      {
+        "source_bbox": [
+          30,
+          14,
+          97,
+          121
+        ],
+        "source_core_top": 29,
+        "source_core_height": 92,
+        "projected_core_height_px": 48,
+        "output_size_px": [
+          35,
+          56
+        ]
+      }
+    ]
+  },
+  "frames": [
+    "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/frames/genderless-child-idle-wheelbase-v2-1-48x64.png",
+    "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/frames/genderless-child-idle-wheelbase-v2-2-48x64.png",
+    "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/frames/genderless-child-idle-wheelbase-v2-3-48x64.png",
+    "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/frames/genderless-child-idle-wheelbase-v2-4-48x64.png"
+  ],
+  "sheet": "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/genderless-child-idle-wheelbase-v2-2x2-48x64.png",
+  "strip": "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/genderless-child-idle-wheelbase-v2-strip-48x64.png",
+  "gif": "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/genderless-child-idle-wheelbase-v2-48x64.gif",
+  "preview_gif": "assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/genderless-child-idle-wheelbase-v2-preview-6x.gif",
+  "static": "assets/design/sprites/characters/v2/ai-agent-child-genderless/static/genderless-child-static-wheelbase-v2-48x64.png",
+  "qc": [
+    {
+      "size_px": [
+        48,
+        64
+      ],
+      "bbox": [
+        7,
+        4,
+        41,
+        62
+      ],
+      "visible_magenta_pixels": 0,
+      "touches_edge": false
+    },
+    {
+      "size_px": [
+        48,
+        64
+      ],
+      "bbox": [
+        7,
+        4,
+        41,
+        62
+      ],
+      "visible_magenta_pixels": 0,
+      "touches_edge": false
+    },
+    {
+      "size_px": [
+        48,
+        64
+      ],
+      "bbox": [
+        7,
+        5,
+        41,
+        62
+      ],
+      "visible_magenta_pixels": 0,
+      "touches_edge": false
+    },
+    {
+      "size_px": [
+        48,
+        64
+      ],
+      "bbox": [
+        6,
+        6,
+        41,
+        62
+      ],
+      "visible_magenta_pixels": 0,
+      "touches_edge": false
+    }
+  ]
+}

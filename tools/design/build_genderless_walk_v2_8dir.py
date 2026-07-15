@@ -20,7 +20,7 @@ from build_genderless_walk_v1 import (
 ROOT = Path(__file__).resolve().parents[2]
 CHAR_DIR = (
     ROOT
-    / "assets/design/sprites/characters/ai-agent-child-genderless"
+    / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
 )
 V1_DIR = CHAR_DIR / "walking/v1"
 V2_DIR = CHAR_DIR / "walking/v2"
@@ -236,7 +236,7 @@ def main() -> None:
         "revision": "eight_direction_v2",
         "status": "superseded_gait_phase_issue",
         "superseded_by": "walking/v3/genderless-child-walk-8dir-alternating-48x64-meta.json",
-        "extends": "assets/design/sprites/characters/ai-agent-child-genderless/walking/v1/genderless-child-walk-4dir-48x64-meta.json",
+        "extends": "assets/design/sprites/characters/v1/ai-agent-child-genderless/walking/v1/genderless-child-walk-4dir-48x64-meta.json",
         "frame_size_px": list(FRAME_SIZE),
         "frame_count_per_direction": 4,
         "direction_rows": {

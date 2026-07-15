@@ -11,7 +11,7 @@ from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CHAR_DIR = ROOT / "assets/design/sprites/characters/ai-agent-child-genderless"
+CHAR_DIR = ROOT / "assets/design/sprites/characters/v1/ai-agent-child-genderless"
 OUTPUT_DIR = CHAR_DIR / "turnaround/v1"
 FRAMES_DIR = OUTPUT_DIR / "frames"
 PREVIEWS_DIR = OUTPUT_DIR / "previews"

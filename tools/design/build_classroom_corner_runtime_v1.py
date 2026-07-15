@@ -23,7 +23,7 @@ COLLISION_QA = RUNTIME_DIR / "classroom-corner-collision-qa-1024x576.png"
 
 GENDERLESS_SOURCE = (
     ROOT
-    / "assets/design/sprites/characters/ai-agent-child-genderless/idle/frames"
+    / "assets/design/sprites/characters/v1/ai-agent-child-genderless/idle/frames"
     / "idle-planted-antenna-v7-wide38-1.png"
 )
 
