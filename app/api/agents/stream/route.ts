@@ -1,14 +1,33 @@
-import { agentRegistry, AgentRegistryChange } from '@/lib/agent-registry';
+import type { AgentRegistryChange } from '@/lib/agent-registry';
+import {
+  DURABLE_REPLAY_BATCH_SIZE,
+  dispatchPendingOutbox,
+  registryChangesAfter,
+  snapshotAgentProfiles,
+} from '@/lib/durable-agent-store';
+import { durableLiveEvents } from '@/lib/durable-live-events';
+import type { DurableRegistryChange } from '@/lib/durable-live-events';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const encoder = new TextEncoder();
 
-function encodeChange(change: AgentRegistryChange): Uint8Array {
-  return encoder.encode(
-    `id: registry:${change.revision}\ndata: ${JSON.stringify(change)}\n\n`,
-  );
+function parseCursor(request: Request): number | null {
+  const header = request.headers.get('last-event-id')?.trim();
+  if (!header) return null;
+  const match = /^registry:(\d+)$/.exec(header);
+  if (!match) return null;
+  const cursor = Number(match[1]);
+  return Number.isSafeInteger(cursor) && cursor >= 0 ? cursor : null;
+}
+
+function encodeChange(
+  change: AgentRegistryChange,
+  cursor?: number,
+): Uint8Array {
+  const id = cursor === undefined ? '' : `id: registry:${cursor}\n`;
+  return encoder.encode(`${id}data: ${JSON.stringify(change)}\n\n`);
 }
 
 export async function GET(request: Request) {
@@ -17,25 +36,56 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(encoder.encode(': Agent Registry API v1\n\n'));
-      for (const profile of agentRegistry.snapshot()) {
-        controller.enqueue(
-          encodeChange({
-            type: 'agent.profile.upserted',
-            agentId: profile.agentId,
-            profile,
-            revision: profile.revision,
-            observedAt: profile.updatedAt,
-          }),
-        );
-      }
-      unsubscribe = agentRegistry.subscribe((change) => {
+      controller.enqueue(encoder.encode(': Agent Registry API v1 durable\n\n'));
+      const pending: DurableRegistryChange[] = [];
+      const seen = new Set<number>();
+      let ready = false;
+
+      const enqueue = (item: DurableRegistryChange) => {
+        if (seen.has(item.cursor)) return;
+        seen.add(item.cursor);
+        controller.enqueue(encodeChange(item.change, item.cursor));
+      };
+
+      unsubscribe = durableLiveEvents.subscribeRegistryChanges((item) => {
         try {
-          controller.enqueue(encodeChange(change));
+          if (ready) enqueue(item);
+          else pending.push(item);
         } catch {
           unsubscribe();
         }
       });
+
+      void (async () => {
+        await dispatchPendingOutbox();
+        const cursor = parseCursor(request);
+        if (cursor === null) {
+          const profiles = await snapshotAgentProfiles();
+          for (const profile of profiles) {
+            controller.enqueue(
+              encodeChange({
+                type: 'agent.profile.upserted',
+                agentId: profile.agentId,
+                profile,
+                revision: profile.revision,
+                observedAt: profile.updatedAt,
+              }),
+            );
+          }
+        } else {
+          let replayCursor = cursor;
+          for (;;) {
+            const changes = await registryChangesAfter(replayCursor);
+            for (const change of changes) enqueue(change);
+            if (changes.length < DURABLE_REPLAY_BATCH_SIZE) break;
+            replayCursor = changes[changes.length - 1]?.cursor ?? replayCursor;
+          }
+        }
+        ready = true;
+        for (const item of pending) enqueue(item);
+        pending.length = 0;
+      })().catch((error) => controller.error(error));
+
       heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': keep-alive\n\n'));

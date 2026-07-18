@@ -62,6 +62,28 @@ if (semanticDuplicate.ok) {
   assert.equal(semanticDuplicate.ignored, 'semantic_duplicate_run_start');
 }
 
+const reverseArrivalAdapter = new OpenClawAgentAdapter();
+const laterRunStart = reverseArrivalAdapter.adapt({
+  ...Object.fromEntries(
+    Object.entries(runStartFixture).filter(([key]) => key !== 'expected'),
+  ),
+  bridgeEventId: 'openclaw:fixture:later-arrival-first',
+  observedAt: '2026-07-17T12:00:01.200Z',
+});
+assert.equal(laterRunStart.ok, true);
+const earlierRunStart = reverseArrivalAdapter.adapt({
+  ...Object.fromEntries(
+    Object.entries(runStartFixture).filter(([key]) => key !== 'expected'),
+  ),
+  bridgeEventId: 'openclaw:fixture:earlier-arrival-second',
+  observedAt: '2026-07-17T12:00:01.000Z',
+});
+assert.equal(earlierRunStart.ok, true);
+if (earlierRunStart.ok) {
+  assert.equal(earlierRunStart.events.length, 0);
+  assert.equal(earlierRunStart.ignored, 'semantic_duplicate_run_start');
+}
+
 assert.equal(classifyOpenClawTool('browser.open'), 'researching');
 assert.equal(classifyOpenClawTool('apply_patch'), 'writing');
 assert.equal(classifyOpenClawTool('git_push'), 'syncing');

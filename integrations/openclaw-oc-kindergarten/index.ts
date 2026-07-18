@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 
 type BridgeConfig = {
   endpoint?: string;
+  pairingEndpoint?: string;
   token?: string;
+  identityMode?: "static" | "server";
   defaultAgentId?: string;
   agentMap?: Record<string, string>;
   unmappedAgentPolicy?: "skip" | "default";
@@ -17,6 +19,12 @@ type HookContext = {
 
 const DEFAULT_ENDPOINT = "http://127.0.0.1:3000/api/openclaw/events";
 const DEFAULT_AGENT_ID = "agent-scout";
+const BRIDGE_ADAPTER_VERSION = "2.0.0";
+const PLUGIN_VERSION = "0.3.0";
+
+function derivePairingEndpoint(endpoint: string): string {
+  return new URL("/api/runtime/enrollments/pair", endpoint).toString();
+}
 
 function contextFields(context: HookContext) {
   return {
@@ -33,13 +41,19 @@ const plugin = {
   register(api) {
     const config = (api.pluginConfig ?? {}) as BridgeConfig;
     const endpoint = config.endpoint?.trim() || DEFAULT_ENDPOINT;
+    const pairingEndpoint =
+      config.pairingEndpoint?.trim() || derivePairingEndpoint(endpoint);
     const token = config.token?.trim();
+    const identityMode = config.identityMode ?? "static";
     const defaultAgentId = config.defaultAgentId?.trim() || DEFAULT_AGENT_ID;
     const agentMap = config.agentMap ?? {};
     const unmappedAgentPolicy = config.unmappedAgentPolicy ?? "skip";
     const gatewayInstanceId = randomUUID();
-    const sessionAgentMap = new Map<string, string>();
+    const sessionClassroomAgentMap = new Map<string, string>();
+    const sessionNativeAgentMap = new Map<string, string>();
+    const seenNativeAgentIds = new Set<string>();
     const warnedUnmappedAgentIds = new Set<string>();
+    const warnedPendingAgentIds = new Set<string>();
     let bridgeSequence = 0;
     let deliveryQueue = Promise.resolve();
 
@@ -58,20 +72,44 @@ const plugin = {
         }
         return undefined;
       }
-      if (context.sessionKey && sessionAgentMap.has(context.sessionKey)) {
-        return sessionAgentMap.get(context.sessionKey);
+      if (
+        context.sessionKey &&
+        sessionClassroomAgentMap.has(context.sessionKey)
+      ) {
+        return sessionClassroomAgentMap.get(context.sessionKey);
       }
       return defaultAgentId;
     };
 
-    const post = async (payload: Record<string, unknown>) => {
+    const resolveNativeAgentId = (
+      context: HookContext,
+      forcedNativeAgentId?: string,
+    ): string | undefined => {
+      const nativeAgentId =
+        forcedNativeAgentId ??
+        context.agentId ??
+        (context.sessionKey
+          ? sessionNativeAgentMap.get(context.sessionKey)
+          : undefined);
+      if (!nativeAgentId) return undefined;
+      seenNativeAgentIds.add(nativeAgentId);
+      if (context.sessionKey) {
+        sessionNativeAgentMap.set(context.sessionKey, nativeAgentId);
+      }
+      return nativeAgentId;
+    };
+
+    const postTo = async (
+      target: string,
+      payload: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> => {
       let lastError: unknown;
       for (const delayMs of [0, 250, 750]) {
         if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 2500);
         try {
-          const response = await fetch(endpoint, {
+          const response = await fetch(target, {
             method: "POST",
             headers: {
               "content-type": "application/json",
@@ -80,10 +118,17 @@ const plugin = {
             body: JSON.stringify(payload),
             signal: controller.signal,
           });
+          const responseText = await response.text();
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(`HTTP ${response.status}: ${responseText}`);
           }
-          return;
+          if (!responseText) return {};
+          try {
+            const parsed = JSON.parse(responseText);
+            return typeof parsed === "object" && parsed !== null ? parsed : {};
+          } catch {
+            return {};
+          }
         } catch (error) {
           lastError = error;
         } finally {
@@ -93,9 +138,30 @@ const plugin = {
       throw lastError instanceof Error ? lastError : new Error(String(lastError));
     };
 
-    const enqueue = (payload: Record<string, unknown>) => {
+    const post = (payload: Record<string, unknown>) => postTo(endpoint, payload);
+
+    const enqueue = (
+      payload: Record<string, unknown>,
+      nativeAgentId?: string,
+    ) => {
       deliveryQueue = deliveryQueue
-        .then(() => post(payload))
+        .then(async () => {
+          const response = await post(payload);
+          if (
+            nativeAgentId &&
+            (response.ignored === "pending_binding" ||
+              response.ignored === "revoked_binding")
+          ) {
+            if (!warnedPendingAgentIds.has(nativeAgentId)) {
+              warnedPendingAgentIds.add(nativeAgentId);
+              api.logger.warn(
+                `OC Kindergarten bridge waiting for server binding: ${nativeAgentId}`,
+              );
+            }
+          } else if (nativeAgentId) {
+            warnedPendingAgentIds.delete(nativeAgentId);
+          }
+        })
         .catch((error: unknown) => {
           api.logger.warn(
             `OC Kindergarten bridge delivery failed: ${
@@ -106,7 +172,7 @@ const plugin = {
       return deliveryQueue;
     };
 
-    const emit = (
+    const emitStatic = (
       hook: string,
       context: HookContext,
       data: Record<string, unknown>,
@@ -117,7 +183,7 @@ const plugin = {
       if (!classroomAgentId) return;
       bridgeSequence += 1;
       if (context.sessionKey) {
-        sessionAgentMap.set(context.sessionKey, classroomAgentId);
+        sessionClassroomAgentMap.set(context.sessionKey, classroomAgentId);
       }
       return enqueue({
         bridgeVersion: 1,
@@ -132,12 +198,167 @@ const plugin = {
       });
     };
 
+    const emitServerResolved = (
+      hook: string,
+      context: HookContext,
+      data: Record<string, unknown>,
+      forcedNativeAgentId?: string,
+    ) => {
+      const nativeAgentId = resolveNativeAgentId(
+        context,
+        forcedNativeAgentId,
+      );
+      if (!nativeAgentId) return;
+      bridgeSequence += 1;
+      return enqueue(
+        {
+          bridgeVersion: 2,
+          kind: "openclaw.hook",
+          bridgeEventId: `openclaw:${gatewayInstanceId}:${bridgeSequence}`,
+          provider: "openclaw",
+          nativeAgentId,
+          runtimeInstanceId: gatewayInstanceId,
+          adapterVersion: BRIDGE_ADAPTER_VERSION,
+          hook,
+          observedAt: new Date().toISOString(),
+          ...contextFields(context),
+          data,
+        },
+        nativeAgentId,
+      );
+    };
+
+    const emit = (
+      hook: string,
+      context: HookContext,
+      data: Record<string, unknown>,
+      forcedIdentity?: string,
+    ) =>
+      identityMode === "server"
+        ? emitServerResolved(hook, context, data, forcedIdentity)
+        : emitStatic(hook, context, data, forcedIdentity);
+
     const configuredClassroomAgents = () =>
       [...new Set([defaultAgentId, ...Object.values(agentMap)].filter(Boolean))];
 
+    const configuredNativeAgents = () =>
+      [...new Set([...Object.keys(agentMap), ...seenNativeAgentIds])];
+
+    api.registerCli(
+      ({ program, config: openClawConfig }) => {
+        const kindergarten = program
+          .command("kindergarten")
+          .description("OC Kindergarten enrollment commands");
+
+        kindergarten
+          .command("pair")
+          .description("Pair one local OpenClaw Agent with a parent enrollment")
+          .argument("<pairing-code>", "One-time code shown by OC Kindergarten")
+          .requiredOption("--agent <native-agent-id>", "OpenClaw Agent ID")
+          .option("--display-name <name>", "Suggested public display name")
+          .option("--role <role>", "Suggested public role")
+          .option(
+            "--character-variant <variant>",
+            "Optional suggestion: boy, girl, or genderless",
+          )
+          .option("--color <hex>", "Optional #RRGGBB color suggestion")
+          .option(
+            "--capabilities <csv>",
+            "Optional comma-separated public capability tags",
+          )
+          .action(async (pairingCode, options) => {
+            if (!token) {
+              throw new Error(
+                "OC Kindergarten Agent event token is not configured",
+              );
+            }
+            const nativeAgentId = String(options.agent ?? "").trim();
+            if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(nativeAgentId)) {
+              throw new Error("OpenClaw Agent ID format is invalid");
+            }
+            const configuredAgents = Array.isArray(openClawConfig.agents?.list)
+              ? openClawConfig.agents.list
+              : [];
+            const configuredAgent = configuredAgents.find(
+              (agent) => agent.id === nativeAgentId,
+            );
+            if (!configuredAgent) {
+              throw new Error(
+                `OpenClaw Agent does not exist in this config: ${nativeAgentId}`,
+              );
+            }
+            const characterVariant = options.characterVariant
+              ? String(options.characterVariant).trim()
+              : undefined;
+            if (
+              characterVariant &&
+              !["boy", "girl", "genderless"].includes(characterVariant)
+            ) {
+              throw new Error(
+                "character-variant must be boy, girl, or genderless",
+              );
+            }
+            const capabilities = options.capabilities
+              ? String(options.capabilities)
+                  .split(",")
+                  .map((item) => item.trim())
+                  .filter(Boolean)
+              : undefined;
+            const displayName =
+              String(options.displayName ?? "").trim() ||
+              String(configuredAgent.name ?? "").trim() ||
+              nativeAgentId;
+            const role = String(options.role ?? "").trim() || undefined;
+            const color = String(options.color ?? "").trim() || undefined;
+            const profileDraft = {
+              displayName,
+              ...(role ? { role } : {}),
+              ...(characterVariant ? { characterVariant } : {}),
+              ...(color ? { color } : {}),
+              ...(capabilities?.length ? { capabilities } : {}),
+            };
+            const response = await postTo(pairingEndpoint, {
+              schemaVersion: 1,
+              pairingCode,
+              discovery: {
+                schemaVersion: 1,
+                provider: "openclaw",
+                nativeAgentId,
+                runtimeInstanceId: gatewayInstanceId,
+                adapterVersion: `plugin-${PLUGIN_VERSION}`,
+                profileDraft,
+              },
+            });
+            const pairing =
+              typeof response.pairing === "object" && response.pairing !== null
+                ? response.pairing
+                : {};
+            console.log(
+              JSON.stringify(
+                {
+                  ok: response.ok === true,
+                  enrollmentId: pairing.enrollmentId,
+                  status: pairing.status,
+                  provider: pairing.provider,
+                  nativeAgentId: pairing.nativeAgentId,
+                  next: "Return to OC Kindergarten and confirm the Agent profile.",
+                },
+                null,
+                2,
+              ),
+            );
+          });
+      },
+      { commands: ["kindergarten"] },
+    );
+
     api.on("gateway_start", (event) => {
-      for (const classroomAgentId of configuredClassroomAgents()) {
-        void emit("gateway_start", {}, { port: event.port }, classroomAgentId);
+      const identities =
+        identityMode === "server"
+          ? configuredNativeAgents()
+          : configuredClassroomAgents();
+      for (const identity of identities) {
+        void emit("gateway_start", {}, { port: event.port }, identity);
       }
     });
 
@@ -184,12 +405,16 @@ const plugin = {
     });
 
     api.on("gateway_stop", async (event) => {
-      for (const classroomAgentId of configuredClassroomAgents()) {
+      const identities =
+        identityMode === "server"
+          ? configuredNativeAgents()
+          : configuredClassroomAgents();
+      for (const identity of identities) {
         await emit(
           "gateway_stop",
           {},
           { ...(event.reason ? { reason: event.reason } : {}) },
-          classroomAgentId,
+          identity,
         );
       }
       await deliveryQueue;

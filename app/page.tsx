@@ -10,6 +10,9 @@ export default function HomePage() {
 
   return (
     <main className="appShell canvasApp">
+      <a className="parentEntryLink" href="/onboarding/parent">
+        家长入口
+      </a>
       <ClassroomSimulation initialIsAdmin={initialIsAdmin} />
     </main>
   );

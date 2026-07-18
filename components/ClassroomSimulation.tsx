@@ -87,6 +87,12 @@ const DOOR_TRANSITION_MS = 360;
 const DOOR_OPEN_HOLD_MS = 1500;
 const JOIN_STAGGER_MS = 2700;
 const LEAVE_STAGGER_MS = 4200;
+const NAME_TAG_FONT = '700 9px ui-sans-serif, system-ui, sans-serif';
+const NAME_TAG_HEIGHT = 15;
+const NAME_TAG_MAX_TEXT_WIDTH = 96;
+const NAME_TAG_HORIZONTAL_PADDING = 6;
+const NAME_TAG_VERTICAL_GAP = 3;
+const NAME_TAG_EDGE_MARGIN = 2;
 
 const RUNTIME_STEPS = [
   ['State', '任务状态转换为明确的场景目标'],
@@ -195,6 +201,81 @@ interface EventStatusView {
   sequence: number;
   agentId: string;
   detail: string;
+}
+
+function fitCanvasText(
+  context: CanvasRenderingContext2D,
+  value: string,
+  maxWidth: number,
+): string {
+  if (context.measureText(value).width <= maxWidth) return value;
+
+  const characters = Array.from(value);
+  const ellipsis = '…';
+  let lower = 0;
+  let upper = characters.length;
+
+  while (lower < upper) {
+    const middle = Math.ceil((lower + upper) / 2);
+    const candidate = `${characters.slice(0, middle).join('')}${ellipsis}`;
+    if (context.measureText(candidate).width <= maxWidth) lower = middle;
+    else upper = middle - 1;
+  }
+
+  return `${characters.slice(0, lower).join('')}${ellipsis}`;
+}
+
+function drawAgentNameTag(
+  context: CanvasRenderingContext2D,
+  agent: RuntimeAgent,
+) {
+  context.save();
+  context.font = NAME_TAG_FONT;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  const label = fitCanvasText(
+    context,
+    agent.name,
+    NAME_TAG_MAX_TEXT_WIDTH,
+  );
+  const width = Math.ceil(context.measureText(label).width) +
+    NAME_TAG_HORIZONTAL_PADDING * 2;
+  const preferredX = Math.round(agent.x - width / 2);
+  const x = Math.max(
+    NAME_TAG_EDGE_MARGIN,
+    Math.min(
+      WORLD_SIZE.width - width - NAME_TAG_EDGE_MARGIN,
+      preferredX,
+    ),
+  );
+  const y = Math.max(
+    NAME_TAG_EDGE_MARGIN,
+    Math.round(
+      agent.y - FRAME_SIZE.height - NAME_TAG_VERTICAL_GAP - NAME_TAG_HEIGHT,
+    ),
+  );
+  const pointerX = Math.max(x + 6, Math.min(x + width - 6, agent.x));
+
+  context.fillStyle = 'rgba(255, 255, 255, 0.94)';
+  context.strokeStyle = agent.color;
+  context.lineWidth = 1;
+  context.beginPath();
+  context.roundRect(x + 0.5, y + 0.5, width - 1, NAME_TAG_HEIGHT - 1, 4);
+  context.fill();
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(pointerX - 3, y + NAME_TAG_HEIGHT - 1);
+  context.lineTo(pointerX, y + NAME_TAG_HEIGHT + 2);
+  context.lineTo(pointerX + 3, y + NAME_TAG_HEIGHT - 1);
+  context.closePath();
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = '#17324a';
+  context.fillText(label, x + width / 2, y + NAME_TAG_HEIGHT / 2 + 0.5);
+  context.restore();
 }
 
 const CHARACTER_ASSETS: Record<
@@ -1253,6 +1334,10 @@ export default function ClassroomSimulation({
             : first.sortY - second.sortY,
         )
         .forEach((renderable) => renderable.draw());
+
+      for (const agent of agentsRef.current) {
+        if (agent.visible) drawAgentNameTag(context, agent);
+      }
 
       if (time - previousUiUpdate > 160) {
         setAgentViews(toAgentViews(agentsRef.current));

@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 
 import { authorizeAgentEventRequest } from '@/lib/agent-event-auth';
-import { agentEventBus } from '@/lib/agent-event-bus';
 import { AGENT_REGISTRY_SCHEMA_VERSION, parseAgentProfileInput } from '@/lib/agent-registry-contract';
-import { agentRegistry } from '@/lib/agent-registry';
+import {
+  archiveAgentProfile,
+  dispatchPendingOutbox,
+  snapshotAgentProfiles,
+  upsertAgentProfile,
+} from '@/lib/durable-agent-store';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,7 +16,7 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     schemaVersion: AGENT_REGISTRY_SCHEMA_VERSION,
-    profiles: agentRegistry.snapshot(),
+    profiles: await snapshotAgentProfiles(),
   });
 }
 
@@ -37,7 +41,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
   }
 
-  const profile = agentRegistry.upsert(parsed.profile);
+  const profile = await upsertAgentProfile(parsed.profile);
+  await dispatchPendingOutbox();
   return NextResponse.json({ ok: true, profile });
 }
 
@@ -49,9 +54,9 @@ export async function DELETE(request: Request) {
   if (!agentId) {
     return NextResponse.json({ ok: false, error: 'agentId 不能为空' }, { status: 400 });
   }
-  if (!agentRegistry.remove(agentId)) {
+  if (!(await archiveAgentProfile(agentId))) {
     return NextResponse.json({ ok: false, error: 'Agent 不存在' }, { status: 404 });
   }
-  agentEventBus.forget(agentId);
+  await dispatchPendingOutbox();
   return NextResponse.json({ ok: true, agentId });
 }

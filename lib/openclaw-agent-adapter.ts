@@ -32,6 +32,8 @@ export interface OpenClawBridgeEvent {
   classroomAgentId: string;
   observedAt: string;
   nativeAgentId?: string;
+  runtimeInstanceId?: string;
+  adapterVersion?: string;
   runId?: string;
   sessionKey?: string;
   sessionId?: string;
@@ -184,7 +186,14 @@ export function parseOpenClawBridgeEvent(
   ) {
     return { ok: false, error: 'observedAt 必须是有效时间' };
   }
-  for (const field of ['nativeAgentId', 'runId', 'sessionKey', 'sessionId']) {
+  for (const field of [
+    'nativeAgentId',
+    'runtimeInstanceId',
+    'adapterVersion',
+    'runId',
+    'sessionKey',
+    'sessionId',
+  ]) {
     if (input[field] !== undefined && typeof input[field] !== 'string') {
       return { ok: false, error: `${field} 必须是字符串` };
     }
@@ -264,11 +273,13 @@ export class OpenClawAgentAdapter {
     ].join(':');
     const observedAt = Date.parse(event.observedAt);
     const previous = this.recentRunStarts.get(key);
-    this.recentRunStarts.set(key, observedAt);
+    this.recentRunStarts.set(
+      key,
+      previous === undefined ? observedAt : Math.max(previous, observedAt),
+    );
     return (
       previous !== undefined &&
-      observedAt >= previous &&
-      observedAt - previous <= this.semanticDuplicateWindowMs
+      Math.abs(observedAt - previous) <= this.semanticDuplicateWindowMs
     );
   }
 
@@ -287,6 +298,12 @@ export class OpenClawAgentAdapter {
         adapter: 'openclaw-native-hooks-v1',
         hook: event.hook,
         ...(event.nativeAgentId ? { nativeAgentId: event.nativeAgentId } : {}),
+        ...(event.runtimeInstanceId
+          ? { runtimeInstanceId: event.runtimeInstanceId }
+          : {}),
+        ...(event.adapterVersion
+          ? { adapterVersion: event.adapterVersion }
+          : {}),
         ...(event.runId ? { runId: event.runId } : {}),
         ...(event.sessionKey ? { sessionKey: event.sessionKey } : {}),
         ...(event.sessionId ? { sessionId: event.sessionId } : {}),
