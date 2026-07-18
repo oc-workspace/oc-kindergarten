@@ -28,6 +28,11 @@ yarn build
 `200ms/帧` writing，到达阅读角后播放 `220ms/帧` researching，抵达积木区后播放
 `180ms/帧` executing，返回出生点后播放 idle。
 
+调试功能统一收纳在画布右上角的管理员面板中。部署前必须配置
+`OC_KINDERGARTEN_ADMIN_TOKEN`；可额外配置
+`OC_KINDERGARTEN_ADMIN_SESSION_SECRET` 来独立签名 8 小时的 HttpOnly 管理员会话。
+未配置管理员令牌时，调试面板保持锁定。
+
 ## Repository Layout
 
 - `app/`：Web 应用。

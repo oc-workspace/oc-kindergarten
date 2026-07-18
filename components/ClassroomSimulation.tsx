@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type FormEvent,
   type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
@@ -86,6 +87,13 @@ const DOOR_TRANSITION_MS = 360;
 const DOOR_OPEN_HOLD_MS = 1500;
 const JOIN_STAGGER_MS = 2700;
 const LEAVE_STAGGER_MS = 4200;
+
+const RUNTIME_STEPS = [
+  ['State', '任务状态转换为明确的场景目标'],
+  ['Route', '在 32px 网格上用 8 邻域 A* 计算路径'],
+  ['Move', '按路径向量切换 8 方向移动动画'],
+  ['Render', '通过轮底锚点和实时 Y-sort 完成遮挡'],
+] as const;
 
 type DoorPhase = 'closed' | 'opening' | 'open' | 'closing';
 
@@ -432,7 +440,13 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   });
 }
 
-export default function ClassroomSimulation() {
+interface ClassroomSimulationProps {
+  initialIsAdmin: boolean;
+}
+
+export default function ClassroomSimulation({
+  initialIsAdmin,
+}: ClassroomSimulationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const profilesRef = useRef(new Map<string, AgentProfile>());
   const agentsRef = useRef<RuntimeAgent[]>([]);
@@ -478,6 +492,12 @@ export default function ClassroomSimulation() {
   const [presenceTransition, setPresenceTransition] = useState<
     'joining' | 'leaving' | null
   >(null);
+  const [isAdmin, setIsAdmin] = useState(initialIsAdmin);
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  const [adminPromptOpen, setAdminPromptOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState('');
+  const [adminAuthBusy, setAdminAuthBusy] = useState(false);
+  const [adminAuthError, setAdminAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     debugRef.current = debug;
@@ -1245,12 +1265,84 @@ export default function ClassroomSimulation() {
     return () => window.cancelAnimationFrame(animationFrame);
   }, [ready]);
 
+  const closeAdminPanel = useCallback(() => {
+    setAdminPanelOpen(false);
+    setAutoMode(false);
+    setDebug(false);
+  }, []);
+
+  const handleAdminPanelToggle = async () => {
+    if (adminPanelOpen) {
+      closeAdminPanel();
+      return;
+    }
+    if (!isAdmin) {
+      setAdminAuthError(null);
+      setAdminPromptOpen(true);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/session', { cache: 'no-store' });
+      const payload = (await response.json()) as { isAdmin?: boolean };
+      if (!response.ok || !payload.isAdmin) {
+        setIsAdmin(false);
+        setAdminPromptOpen(true);
+        return;
+      }
+      setAdminPanelOpen(true);
+    } catch {
+      setAdminAuthError('暂时无法验证管理员会话，请稍后重试');
+      setAdminPromptOpen(true);
+    }
+  };
+
+  const handleAdminLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!adminToken.trim() || adminAuthBusy) return;
+    setAdminAuthBusy(true);
+    setAdminAuthError(null);
+    try {
+      const response = await fetch('/api/admin/session', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: adminToken }),
+      });
+      const payload = (await response.json()) as {
+        isAdmin?: boolean;
+        error?: string;
+      };
+      if (!response.ok || !payload.isAdmin) {
+        throw new Error(payload.error ?? '管理员验证失败');
+      }
+      setIsAdmin(true);
+      setAdminToken('');
+      setAdminPromptOpen(false);
+      setAdminPanelOpen(true);
+    } catch (error) {
+      setAdminAuthError(
+        error instanceof Error ? error.message : '管理员验证失败',
+      );
+    } finally {
+      setAdminAuthBusy(false);
+    }
+  };
+
+  const handleAdminLogout = async () => {
+    await fetch('/api/admin/session', { method: 'DELETE' }).catch(() => null);
+    closeAdminPanel();
+    setIsAdmin(false);
+    setAdminToken('');
+  };
+
   const handleAllState = (state: AgentTaskState) => {
+    if (!isAdmin || !adminPanelOpen) return;
     setAutoMode(false);
     publishStateForAll(state);
   };
 
   const handleAgentState = (agentId: string, state: AgentTaskState) => {
+    if (!isAdmin || !adminPanelOpen) return;
     setAutoMode(false);
     const event = mockAdapterRef.current?.createStateEvent(agentId, state);
     if (event) dispatchAgentEvent(event);
@@ -1258,7 +1350,13 @@ export default function ClassroomSimulation() {
 
   const handleCanvasClick = (event: ReactMouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || !ready || presenceTransition !== null) return;
+    if (
+      !canvas ||
+      !ready ||
+      !isAdmin ||
+      !adminPanelOpen ||
+      presenceTransition !== null
+    ) return;
     const bounds = canvas.getBoundingClientRect();
     const x = ((event.clientX - bounds.left) / bounds.width) * canvas.width;
     const y = ((event.clientY - bounds.top) / bounds.height) * canvas.height;
@@ -1297,11 +1395,13 @@ export default function ClassroomSimulation() {
   };
 
   const reset = () => {
+    if (!isAdmin || !adminPanelOpen) return;
     setAutoMode(false);
     startJoinSequence();
   };
 
   const leave = () => {
+    if (!isAdmin || !adminPanelOpen) return;
     setAutoMode(false);
     startLeaveSequence();
   };
@@ -1322,80 +1422,86 @@ export default function ClassroomSimulation() {
   }, [agentViews, presenceTransition]);
 
   return (
-    <section className="simulationSection" aria-labelledby="simulation-title">
-      <div className="sectionHeading">
-        <div>
-          <p className="eyebrow">Runtime vertical slice</p>
-          <h2 id="simulation-title">教室运行时</h2>
-          <p>Registry 中的动态 Agent 会把状态指令转换成区域站位、排队、A* 路径和到达动作。</p>
-        </div>
-        <div className="runtimeBadges" aria-label="运行时规格">
-          <span>512×288</span>
-          <span>32px grid</span>
-          <span>8 directions</span>
-          <span>Agent Event API v1</span>
-          <span>
-            Registry：
-            {registryStreamStatus === 'live'
-              ? '已连接'
-              : registryStreamStatus === 'retrying'
-                ? '重连中'
-                : registryStreamStatus === 'unsupported'
-                  ? '不支持'
-                  : '连接中'}
-          </span>
-          <span>
-            事件流：
-            {eventStreamStatus === 'live'
-              ? '已连接'
-              : eventStreamStatus === 'retrying'
-                ? '重连中'
-                : eventStreamStatus === 'unsupported'
-                  ? '不支持'
-                  : '连接中'}
-          </span>
-        </div>
+    <section className="canvasWorkspace" aria-label="OC Kindergarten 实时场景">
+      <div className="sceneViewport canvasOnlyViewport">
+        <canvas
+          ref={canvasRef}
+          width={WORLD_SIZE.width}
+          height={WORLD_SIZE.height}
+          onClick={isAdmin && adminPanelOpen ? handleCanvasClick : undefined}
+          className={isAdmin && adminPanelOpen ? 'isDebugInteractive' : ''}
+          aria-label="动态注册的 AI agent 从教室入口入场，并在不同功能区之间移动的实时场景"
+        />
+        {!ready && !loadError && (
+          <div className="sceneLoading">正在载入运行时资源…</div>
+        )}
+        {loadError && <div className="sceneLoading sceneError">{loadError}</div>}
       </div>
 
-      <div className="simulationShell">
-        <div className="sceneColumn">
-          <div className="sceneViewport">
-            <canvas
-              ref={canvasRef}
-              width={WORLD_SIZE.width}
-              height={WORLD_SIZE.height}
-              onClick={handleCanvasClick}
-              aria-label="动态注册的 AI agent 从教室入口入场，并在写画桌、阅读角、积木区、同步邮件站和诊断修理站之间移动的实时场景"
-            />
-            {!ready && !loadError && <div className="sceneLoading">正在载入运行时资源…</div>}
-            {loadError && <div className="sceneLoading sceneError">{loadError}</div>}
-          </div>
+      <button
+        className={`debugPanelToggle ${adminPanelOpen ? 'isOpen' : ''}`}
+        type="button"
+        onClick={() => void handleAdminPanelToggle()}
+        aria-expanded={adminPanelOpen}
+        aria-controls="admin-debug-panel"
+        title={isAdmin ? '打开或收起管理员调试面板' : '管理员验证'}
+      >
+        <span aria-hidden="true">{adminPanelOpen ? '×' : '⚙'}</span>
+        <span>{adminPanelOpen ? '收起调试' : '调试'}</span>
+      </button>
 
-          <div className="sceneToolbar" aria-label="场景控制">
-            <div className="commandGroup">
-              <span className="toolbarLabel">全体指令</span>
+      {isAdmin && adminPanelOpen && (
+        <aside
+          className="debugPanel"
+          id="admin-debug-panel"
+          aria-label="管理员调试面板"
+        >
+          <header className="debugPanelHeader">
+            <div>
+              <p className="eyebrow">Admin only</p>
+              <h1>运行时调试</h1>
+              <p>OC Kindergarten · Agent Event API v1</p>
+            </div>
+            <button type="button" onClick={() => void handleAdminLogout()}>
+              退出管理员
+            </button>
+          </header>
+
+          <section className="debugPanelSection" aria-labelledby="runtime-status-title">
+            <div className="debugSectionTitle">
+              <h2 id="runtime-status-title">运行状态</h2>
+              <span className="adminBadge">管理员</span>
+            </div>
+            <div className="runtimeBadges" aria-label="运行时规格">
+              <span>512×288</span>
+              <span>32px grid</span>
+              <span>8 directions</span>
+              <span>Registry：{registryStreamStatus === 'live' ? '已连接' : registryStreamStatus === 'retrying' ? '重连中' : registryStreamStatus === 'unsupported' ? '不支持' : '连接中'}</span>
+              <span>事件流：{eventStreamStatus === 'live' ? '已连接' : eventStreamStatus === 'retrying' ? '重连中' : eventStreamStatus === 'unsupported' ? '不支持' : '连接中'}</span>
+            </div>
+          </section>
+
+          <section className="debugPanelSection" aria-labelledby="global-command-title">
+            <h2 id="global-command-title">场景控制</h2>
+            <div className="commandGroup debugCommandGrid">
               {AGENT_TASK_STATES.map((state) => (
                 <button
                   className={`commandButton command-${state}`}
                   key={state}
                   type="button"
                   onClick={() => handleAllState(state)}
-                  disabled={
-                    !ready || !allPlayersJoined || presenceTransition !== null
-                  }
+                  disabled={!ready || !allPlayersJoined || presenceTransition !== null}
                 >
-                  {STATE_CONFIG[state].label}
+                  全体{STATE_CONFIG[state].label}
                 </button>
               ))}
             </div>
-            <div className="utilityGroup">
+            <div className="utilityGroup debugUtilityGrid">
               <button
                 className={`utilityButton ${autoMode ? 'isActive' : ''}`}
                 type="button"
                 onClick={() => setAutoMode((current) => !current)}
-                disabled={
-                  !ready || !allPlayersJoined || presenceTransition !== null
-                }
+                disabled={!ready || !allPlayersJoined || presenceTransition !== null}
                 aria-pressed={autoMode}
               >
                 {autoMode ? '停止自主行动' : '自主随机行动'}
@@ -1406,136 +1512,107 @@ export default function ClassroomSimulation() {
                 onClick={() => setDebug((current) => !current)}
                 aria-pressed={debug}
               >
-                路径调试
+                路径与网格
               </button>
-              <button
-                className="utilityButton"
-                type="button"
-                onClick={leave}
-                disabled={
-                  !ready || !allPlayersJoined || presenceTransition !== null
-                }
-              >
+              <button className="utilityButton" type="button" onClick={leave} disabled={!ready || !allPlayersJoined || presenceTransition !== null}>
                 全体离场
               </button>
               <button className="utilityButton" type="button" onClick={reset}>
                 重新入场
               </button>
             </div>
-          </div>
-          <div className="regionCapacityList" aria-label="功能区容量">
-            {AGENT_TASK_STATES.map((state) => {
-              const occupied = agentViews.filter(
-                (agent) => agent.visible && agent.taskState === state,
-              ).length;
-              const waiting = agentViews.filter(
-                (agent) => agent.visible && agent.waitingForState === state,
-              ).length;
-              return (
-                <span key={state}>
-                  {STATE_CONFIG[state].shortLabel} {occupied}/{REGION_CAPACITIES[state]}
-                  {waiting > 0 ? ` · 等待 ${waiting}` : ''}
-                </span>
-              );
-            })}
-          </div>
-          <p className="sceneHint">
-            场景操作对象：<strong>{selectedAgentView?.name ?? '等待 Agent 入场'}</strong>
-            <span>点击书架、书箱、活动桌、玩具箱、邮件站或修理站可触发对应行为</span>
-          </p>
-          {sceneActionStatus && (
-            <p className="sceneActionStatus" role="status" aria-live="polite">
-              {sceneActionStatus}
-            </p>
-          )}
-          {eventStatus && !eventError && (
-            <p className="eventStatus" role="status" aria-live="polite">
-              <strong>Event API v1</strong>
-              <span>
-                {eventStatus.source} #{eventStatus.sequence} · {eventStatus.type} ·{' '}
-                {eventStatus.agentId} · {eventStatus.detail}
-              </span>
-            </p>
-          )}
-          {eventError && (
-            <p className="routeError" role="alert">
-              {eventError}
-            </p>
-          )}
-          {routeError && <p className="routeError" role="alert">{routeError}</p>}
-        </div>
-
-        <aside className="agentPanel" aria-label="Agent 状态">
-          {agentViews.map((agent) => {
-            const state = STATE_CONFIG[agent.taskState];
-            return (
-              <article
-                className={`agentCard ${selectedAgentView?.id === agent.id ? 'isSceneTarget' : ''}`}
-                key={agent.id}
-              >
-                <div className="agentCardHeader">
-                  <span className="agentDot" style={{ background: agent.color }} />
-                  <div>
-                    <h3>{agent.name}</h3>
-                    <p>{agent.role}</p>
-                  </div>
-                  <span
-                    className={`motionStatus ${agent.moving ? 'isMoving' : ''} ${agent.waitingForState ? 'isWaiting' : ''}`}
-                  >
-                    {!agent.visible
-                      ? '等待入场'
-                      : agent.waitingForState
-                        ? '排队中'
-                        : agent.moving
-                          ? '移动中'
-                          : '已到达'}
+            <div className="regionCapacityList" aria-label="功能区容量">
+              {AGENT_TASK_STATES.map((state) => {
+                const occupied = agentViews.filter((agent) => agent.visible && agent.taskState === state).length;
+                const waiting = agentViews.filter((agent) => agent.visible && agent.waitingForState === state).length;
+                return (
+                  <span key={state}>
+                    {STATE_CONFIG[state].shortLabel} {occupied}/{REGION_CAPACITIES[state]}
+                    {waiting > 0 ? ` · 等待 ${waiting}` : ''}
                   </span>
-                </div>
-                <div className="agentStateLine">
-                  <strong>{state.shortLabel}</strong>
-                  <span>{state.location}</span>
-                </div>
-                <p className="agentMeta">
-                  {agent.waitingForState
-                    ? `等待进入${STATE_CONFIG[agent.waitingForState].location}`
-                    : agent.moving
-                      ? `${agent.routeLength} 格路径 · ${agent.direction}`
-                    : state.arrivalAnimation}
-                </p>
-                <button
-                  className="agentSelectButton"
-                  type="button"
-                  onClick={() => {
-                    setSelectedAgentId(agent.id);
-                    setSceneActionStatus(`${agent.name} 已成为场景操作对象`);
-                  }}
-                  disabled={!agent.visible}
-                  aria-pressed={selectedAgentView?.id === agent.id}
-                >
-                  {selectedAgentView?.id === agent.id
-                    ? '当前场景操作对象'
-                    : '设为场景操作对象'}
-                </button>
-                <div className="agentCommands" aria-label={`${agent.name}状态指令`}>
-                  {AGENT_TASK_STATES.map((stateId) => (
+                );
+              })}
+            </div>
+            <p className="sceneHint">
+              操作对象：<strong>{selectedAgentView?.name ?? '等待 Agent 入场'}</strong>
+              <span>点击画布中的功能物件可触发行为</span>
+            </p>
+            {sceneActionStatus && <p className="sceneActionStatus" role="status">{sceneActionStatus}</p>}
+            {eventStatus && !eventError && (
+              <p className="eventStatus" role="status">
+                <strong>Event API v1</strong>
+                <span>{eventStatus.source} #{eventStatus.sequence} · {eventStatus.type} · {eventStatus.agentId} · {eventStatus.detail}</span>
+              </p>
+            )}
+            {eventError && <p className="routeError" role="alert">{eventError}</p>}
+            {routeError && <p className="routeError" role="alert">{routeError}</p>}
+          </section>
+
+          <section className="debugPanelSection" aria-labelledby="agent-debug-title">
+            <h2 id="agent-debug-title">Agent 状态与指令</h2>
+            <div className="agentPanel">
+              {agentViews.map((agent) => {
+                const state = STATE_CONFIG[agent.taskState];
+                return (
+                  <article className={`agentCard ${selectedAgentView?.id === agent.id ? 'isSceneTarget' : ''}`} key={agent.id}>
+                    <div className="agentCardHeader">
+                      <span className="agentDot" style={{ background: agent.color }} />
+                      <div><h3>{agent.name}</h3><p>{agent.role}</p></div>
+                      <span className={`motionStatus ${agent.moving ? 'isMoving' : ''} ${agent.waitingForState ? 'isWaiting' : ''}`}>
+                        {!agent.visible ? '等待入场' : agent.waitingForState ? '排队中' : agent.moving ? '移动中' : '已到达'}
+                      </span>
+                    </div>
+                    <div className="agentStateLine"><strong>{state.shortLabel}</strong><span>{state.location}</span></div>
+                    <p className="agentMeta">{agent.waitingForState ? `等待进入${STATE_CONFIG[agent.waitingForState].location}` : agent.moving ? `${agent.routeLength} 格路径 · ${agent.direction}` : state.arrivalAnimation}</p>
                     <button
-                      key={stateId}
+                      className="agentSelectButton"
                       type="button"
-                      className={agent.taskState === stateId ? 'isSelected' : ''}
-                      onClick={() => handleAgentState(agent.id, stateId)}
-                      disabled={
-                        !ready || !agent.visible || presenceTransition !== null
-                      }
+                      onClick={() => { setSelectedAgentId(agent.id); setSceneActionStatus(`${agent.name} 已成为场景操作对象`); }}
+                      disabled={!agent.visible}
+                      aria-pressed={selectedAgentView?.id === agent.id}
                     >
-                      {STATE_CONFIG[stateId].label}
+                      {selectedAgentView?.id === agent.id ? '当前场景操作对象' : '设为场景操作对象'}
                     </button>
-                  ))}
-                </div>
-              </article>
-            );
-          })}
+                    <div className="agentCommands" aria-label={`${agent.name}状态指令`}>
+                      {AGENT_TASK_STATES.map((stateId) => (
+                        <button key={stateId} type="button" className={agent.taskState === stateId ? 'isSelected' : ''} onClick={() => handleAgentState(agent.id, stateId)} disabled={!ready || !agent.visible || presenceTransition !== null}>
+                          {STATE_CONFIG[stateId].label}
+                        </button>
+                      ))}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="debugPanelSection" aria-labelledby="runtime-flow-title">
+            <h2 id="runtime-flow-title">运行管线</h2>
+            <ol className="runtimeStepList">
+              {RUNTIME_STEPS.map(([title, note], index) => (
+                <li key={title}><span>{String(index + 1).padStart(2, '0')}</span><div><strong>{title}</strong><p>{note}</p></div></li>
+              ))}
+            </ol>
+          </section>
         </aside>
-      </div>
+      )}
+
+      {adminPromptOpen && (
+        <div className="adminDialogBackdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAdminPromptOpen(false); }}>
+          <div className="adminDialog" role="dialog" aria-modal="true" aria-labelledby="admin-dialog-title">
+            <button className="adminDialogClose" type="button" onClick={() => setAdminPromptOpen(false)} aria-label="关闭管理员验证">×</button>
+            <p className="eyebrow">Restricted access</p>
+            <h2 id="admin-dialog-title">管理员验证</h2>
+            <p>调试工具包含运行时控制能力，仅管理员可以打开。</p>
+            <form onSubmit={(event) => void handleAdminLogin(event)}>
+              <label htmlFor="admin-token">管理员访问令牌</label>
+              <input id="admin-token" type="password" value={adminToken} onChange={(event) => setAdminToken(event.target.value)} autoComplete="current-password" autoFocus />
+              {adminAuthError && <p className="adminAuthError" role="alert">{adminAuthError}</p>}
+              <button type="submit" disabled={!adminToken.trim() || adminAuthBusy}>{adminAuthBusy ? '正在验证…' : '验证并打开'}</button>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
