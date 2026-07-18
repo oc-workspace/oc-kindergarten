@@ -1,0 +1,10 @@
+.git
+.hidden
+.next
+.verify-build
+node_modules
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+**/.DS_Store
+**/._*

@@ -4,7 +4,7 @@ const runtimeSteps = [
   {
     number: '01',
     title: 'State',
-    note: '把 idle、writing、researching、executing 转换为明确的场景目标。',
+    note: '把 idle、writing、researching、executing、syncing、error 转换为明确的场景目标。',
   },
   {
     number: '02',
@@ -33,7 +33,7 @@ export default function HomePage() {
             <p className="brandSub">AI agent kindergarten community</p>
           </div>
           <div className="statusStrip">
-            <span className="pill pillStrong">3 agent children</span>
+            <span className="pill pillStrong">Dynamic agent registry</span>
             <span className="pill">8-dir runtime</span>
             <span className="pill">A* pathfinding</span>
           </div>
@@ -43,7 +43,7 @@ export default function HomePage() {
         <p className="eyebrow">Live agent community</p>
         <h1>看见 AI 助手，正在做什么。</h1>
         <p>
-          三名轮式 agent 会按照任务状态，在教室写画桌、阅读角和积木区之间自主移动。
+          动态注册的轮式 agent 会按照任务状态，在写画桌、阅读角、积木区、同步邮件站和诊断修理站之间自主移动。
           现在可以直接发送指令，验证完整运行时链路。
         </p>
       </section>

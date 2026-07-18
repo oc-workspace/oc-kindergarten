@@ -196,6 +196,7 @@ button:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
+  cursor: pointer;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -294,6 +295,10 @@ button:focus-visible {
   background: #e9e6ff;
 }
 
+.command-error {
+  background: #ffe7df;
+}
+
 .utilityButton {
   color: var(--muted);
 }
@@ -313,6 +318,55 @@ button:focus-visible {
   font-size: 13px;
 }
 
+.eventStatus {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(41, 125, 182, 0.18);
+  border-radius: 10px;
+  background: rgba(229, 243, 251, 0.72);
+  color: var(--muted);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.eventStatus strong {
+  color: var(--blue);
+}
+
+.sceneHint,
+.sceneActionStatus {
+  margin: 10px 0 0;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.sceneHint {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  border: 1px dashed rgba(41, 125, 182, 0.3);
+  background: rgba(255, 255, 255, 0.66);
+  color: var(--muted);
+}
+
+.sceneHint strong {
+  color: var(--blue);
+}
+
+.sceneHint span {
+  margin-left: auto;
+}
+
+.sceneActionStatus {
+  border: 1px solid rgba(214, 155, 25, 0.24);
+  background: #fff8da;
+  color: #75500c;
+}
+
 .agentPanel {
   display: grid;
   gap: 10px;
@@ -324,6 +378,11 @@ button:focus-visible {
   padding: 14px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 12px 32px rgba(67, 86, 94, 0.08);
+}
+
+.agentCard.isSceneTarget {
+  border-color: rgba(41, 125, 182, 0.48);
+  box-shadow: 0 12px 32px rgba(41, 125, 182, 0.13);
 }
 
 .agentCardHeader {
@@ -364,6 +423,28 @@ button:focus-visible {
   color: #216c9b;
 }
 
+.motionStatus.isWaiting {
+  background: #fff1c9;
+  color: #8a5a12;
+}
+
+.regionCapacityList {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.regionCapacityList span {
+  border: 1px solid rgba(41, 125, 182, 0.16);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+}
+
 .agentStateLine {
   margin-top: 12px;
   display: flex;
@@ -380,6 +461,29 @@ button:focus-visible {
 .agentMeta {
   color: var(--muted);
   font-size: 11px;
+}
+
+.agentSelectButton {
+  width: 100%;
+  min-height: 28px;
+  margin: 0 0 8px;
+  border: 1px dashed rgba(41, 125, 182, 0.34);
+  border-radius: 8px;
+  background: #f5fbff;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.agentSelectButton:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.agentSelectButton[aria-pressed="true"] {
+  border-style: solid;
+  background: var(--sky);
 }
 
 .agentMeta {
