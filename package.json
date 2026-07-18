@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify:types": "tsc --noEmit",
+    "verify:runtime": "tsc -p tools/tsconfig.verify.json && node .verify-build/tools/verify-openclaw-adapters.js && node .verify-build/tools/verify-agent-registry.js",
+    "verify": "npm run verify:types && npm run verify:runtime && npm run build"
   },
   "dependencies": {
     "@types/node": "20.11.30",
