@@ -1,0 +1,58 @@
+{
+  "id": "oc-kindergarten-bridge",
+  "name": "OC Kindergarten Bridge",
+  "description": "Projects OpenClaw lifecycle hooks into OC Kindergarten Agent Event API v1.",
+  "activation": {
+    "onStartup": true
+  },
+  "uiHints": {
+    "endpoint": {
+      "label": "OC Kindergarten endpoint",
+      "help": "Full /api/openclaw/events URL."
+    },
+    "token": {
+      "label": "Agent event token",
+      "sensitive": true
+    },
+    "defaultAgentId": {
+      "label": "Default classroom Agent ID"
+    },
+    "agentMap": {
+      "label": "OpenClaw-to-classroom Agent map"
+    },
+    "unmappedAgentPolicy": {
+      "label": "Unmapped OpenClaw Agent policy",
+      "help": "Skip unknown native Agent IDs by default; use default only for legacy compatibility."
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "endpoint": {
+        "type": "string",
+        "pattern": "^[Hh][Tt][Tt][Pp][Ss]?://",
+        "default": "http://127.0.0.1:3000/api/openclaw/events"
+      },
+      "token": {
+        "type": "string"
+      },
+      "defaultAgentId": {
+        "type": "string",
+        "default": "agent-scout"
+      },
+      "agentMap": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        },
+        "default": {}
+      },
+      "unmappedAgentPolicy": {
+        "type": "string",
+        "enum": ["skip", "default"],
+        "default": "skip"
+      }
+    }
+  }
+}
