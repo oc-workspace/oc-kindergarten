@@ -1,13 +1,28 @@
-import { agentEventBus } from '@/lib/agent-event-bus';
-import { AgentRuntimeEvent } from '@/lib/agent-event-contract';
+import {
+  DURABLE_REPLAY_BATCH_SIZE,
+  agentEventsAfter,
+  dispatchPendingOutbox,
+  snapshotAgentEvents,
+} from '@/lib/durable-agent-store';
+import { durableLiveEvents } from '@/lib/durable-live-events';
+import type { DurableAgentEvent } from '@/lib/durable-live-events';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const encoder = new TextEncoder();
 
-function encodeEvent(event: AgentRuntimeEvent): Uint8Array {
-  return encoder.encode(`id: ${event.eventId}\ndata: ${JSON.stringify(event)}\n\n`);
+function parseCursor(request: Request): number | null {
+  const raw = request.headers.get('last-event-id')?.trim();
+  if (!raw || !/^\d+$/.test(raw)) return null;
+  const cursor = Number(raw);
+  return Number.isSafeInteger(cursor) && cursor >= 0 ? cursor : null;
+}
+
+function encodeEvent(stored: DurableAgentEvent): Uint8Array {
+  return encoder.encode(
+    `id: ${stored.cursor}\ndata: ${JSON.stringify(stored.event)}\n\n`,
+  );
 }
 
 export async function GET(request: Request) {
@@ -16,14 +31,45 @@ export async function GET(request: Request) {
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      controller.enqueue(encoder.encode(': Agent Event API v1\n\n'));
-      unsubscribe = agentEventBus.subscribe((event) => {
+      controller.enqueue(encoder.encode(': Agent Event API v1 durable\n\n'));
+      const pending: DurableAgentEvent[] = [];
+      const seen = new Set<number>();
+      let ready = false;
+
+      const enqueue = (stored: DurableAgentEvent) => {
+        if (seen.has(stored.cursor)) return;
+        seen.add(stored.cursor);
+        controller.enqueue(encodeEvent(stored));
+      };
+
+      unsubscribe = durableLiveEvents.subscribeAgentEvents((stored) => {
         try {
-          controller.enqueue(encodeEvent(event));
+          if (ready) enqueue(stored);
+          else pending.push(stored);
         } catch {
           unsubscribe();
         }
       });
+
+      void (async () => {
+        await dispatchPendingOutbox();
+        const cursor = parseCursor(request);
+        if (cursor === null) {
+          for (const stored of await snapshotAgentEvents()) enqueue(stored);
+        } else {
+          let replayCursor = cursor;
+          for (;;) {
+            const events = await agentEventsAfter(replayCursor);
+            for (const stored of events) enqueue(stored);
+            if (events.length < DURABLE_REPLAY_BATCH_SIZE) break;
+            replayCursor = events[events.length - 1]?.cursor ?? replayCursor;
+          }
+        }
+        ready = true;
+        for (const stored of pending) enqueue(stored);
+        pending.length = 0;
+      })().catch((error) => controller.error(error));
+
       heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': keep-alive\n\n'));
