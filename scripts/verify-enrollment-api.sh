@@ -27,39 +27,41 @@ DELETE FROM agent_action_commands
 WHERE agent_id IN (
   SELECT p.agent_id FROM agent_profiles p
   JOIN agent_enrollments e ON e.id = p.enrollment_id
-  WHERE e.parent_user_id = :'parent_id'::uuid
+  WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
 DELETE FROM agent_event_cursors
 WHERE agent_id IN (
   SELECT p.agent_id FROM agent_profiles p
   JOIN agent_enrollments e ON e.id = p.enrollment_id
-  WHERE e.parent_user_id = :'parent_id'::uuid
+  WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
 DELETE FROM agent_latest_states
 WHERE agent_id IN (
   SELECT p.agent_id FROM agent_profiles p
   JOIN agent_enrollments e ON e.id = p.enrollment_id
-  WHERE e.parent_user_id = :'parent_id'::uuid
+  WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
 DELETE FROM agent_event_log
 WHERE agent_id IN (
   SELECT p.agent_id FROM agent_profiles p
   JOIN agent_enrollments e ON e.id = p.enrollment_id
-  WHERE e.parent_user_id = :'parent_id'::uuid
+  WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
 DELETE FROM event_outbox
 WHERE aggregate_id IN (
   SELECT p.agent_id FROM agent_profiles p
   JOIN agent_enrollments e ON e.id = p.enrollment_id
-  WHERE e.parent_user_id = :'parent_id'::uuid
+  WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
 DELETE FROM provider_agent_bindings
 WHERE provider = 'openclaw' AND native_agent_id = :'native_agent';
 DELETE FROM agent_profiles
 WHERE enrollment_id IN (
-  SELECT id FROM agent_enrollments WHERE parent_user_id = :'parent_id'::uuid
+  SELECT id FROM agent_enrollments
+  WHERE parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
-DELETE FROM agent_enrollments WHERE parent_user_id = :'parent_id'::uuid;
+DELETE FROM agent_enrollments
+WHERE parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid);
 DELETE FROM parent_users
 WHERE id IN (:'parent_id'::uuid, :'other_parent_id'::uuid);
 COMMIT;
@@ -234,26 +236,124 @@ resumed_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
   jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
 test "${resumed_registry_count}" = "1"
 
-archive_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-  -H "Cookie: ${session_cookie}" \
-  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/archive")"
-test "${archive_status}" = "409"
+pre_archive_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${agent_token}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "$(jq -cn --arg agent_id "${agent_id}" --arg event_id "pre-archive-event-${test_stamp}" '{schemaVersion:1,eventId:$event_id,type:"agent.state",agentId:$agent_id,source:"replay",observedAt:"2026-07-19T00:01:00.000Z",sequence:1,state:"writing"}')" \
+  "${PUBLIC_ORIGIN}/api/agent-events")"
+test "${pre_archive_event_status}" = "200"
 
-archive_result="$(curl -sS -X POST \
+archive_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
   "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/archive")"
-test "$(printf '%s' "${archive_result}" | jq -r '.code')" = "archive_deferred"
+test "$(printf '%s' "${archive_result}" | jq -r '.enrollment.status')" = "archived"
+
+repeat_archive_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/archive")"
+test "${repeat_archive_status}" = "200"
 
 archive_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
   -v ON_ERROR_STOP=1 \
-  -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.archived_at IS NULL AND e.status = 'active' AND b.status = 'active';")"
+  -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.archived_at IS NOT NULL AND e.status = 'archived' AND b.status = 'revoked';")"
 test "${archive_count}" = "1"
+
+archived_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
+  jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
+test "${archived_registry_count}" = "0"
+
+archived_latest_count="$(docker compose exec -T postgres psql \
+  -U "${POSTGRES_USER:-oc_kindergarten_user}" \
+  -d "${POSTGRES_DB:-oc_kindergarten}" \
+  -At -c "SELECT count(*) FROM agent_latest_states WHERE agent_id = '${agent_id}';")"
+test "${archived_latest_count}" = "0"
+
+archived_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${agent_token}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "$(jq -cn --arg agent_id "${agent_id}" --arg event_id "archived-event-${test_stamp}" '{schemaVersion:1,eventId:$event_id,type:"agent.state",agentId:$agent_id,source:"replay",observedAt:"2026-07-19T00:02:00.000Z",sequence:2,state:"idle"}')" \
+  "${PUBLIC_ORIGIN}/api/agent-events")"
+test "${archived_event_status}" = "409"
+
+other_claim_create_json="$(curl -fsS -X POST \
+  -H "Cookie: ${other_session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments")"
+other_claim_enrollment_id="$(printf '%s' "${other_claim_create_json}" | jq -er '.enrollment.id')"
+other_claim_code_json="$(curl -fsS -X POST \
+  -H "Cookie: ${other_session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${other_claim_enrollment_id}/pairing-code")"
+other_claim_pairing_code="$(printf '%s' "${other_claim_code_json}" | jq -er '.pairingCode')"
+other_claim_pair_json="$(jq -cn \
+  --arg pairing_code "${other_claim_pairing_code}" \
+  --arg native_agent "${test_native_agent}" \
+  '{schemaVersion:1,pairingCode:$pairing_code,discovery:{schemaVersion:1,provider:"openclaw",nativeAgentId:$native_agent,profileDraft:{displayName:"Cross-owner claim"}}}')"
+other_claim_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${agent_token}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "${other_claim_pair_json}" \
+  "${PUBLIC_ORIGIN}/api/runtime/enrollments/pair")"
+test "${other_claim_status}" = "409"
+
+other_parent_restore_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Cookie: ${other_session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/restore")"
+test "${other_parent_restore_status}" = "404"
+
+restore_result="$(curl -fsS -X POST \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/restore")"
+test "$(printf '%s' "${restore_result}" | jq -r '.enrollment.status')" = "suspended"
+
+repeat_restore_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/restore")"
+test "${repeat_restore_status}" = "200"
+
+restored_count="$(docker compose exec -T postgres psql \
+  -U "${POSTGRES_USER:-oc_kindergarten_user}" \
+  -d "${POSTGRES_DB:-oc_kindergarten}" \
+  -v ON_ERROR_STOP=1 \
+  -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.archived_at IS NULL AND e.status = 'suspended' AND b.status = 'active';")"
+test "${restored_count}" = "1"
+
+restored_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
+  jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
+test "${restored_registry_count}" = "0"
+
+restored_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${agent_token}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "$(jq -cn --arg agent_id "${agent_id}" --arg event_id "restored-suspended-event-${test_stamp}" '{schemaVersion:1,eventId:$event_id,type:"agent.state",agentId:$agent_id,source:"replay",observedAt:"2026-07-19T00:03:00.000Z",sequence:2,state:"idle"}')" \
+  "${PUBLIC_ORIGIN}/api/agent-events")"
+test "${restored_event_status}" = "409"
+
+post_restore_resume_result="$(curl -fsS -X POST \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/resume")"
+test "$(printf '%s' "${post_restore_resume_result}" | jq -r '.enrollment.status')" = "active"
+
+post_restore_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
+  jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
+test "${post_restore_registry_count}" = "1"
+
+post_restore_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${agent_token}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "$(jq -cn --arg agent_id "${agent_id}" --arg event_id "post-restore-event-${test_stamp}" '{schemaVersion:1,eventId:$event_id,type:"agent.state",agentId:$agent_id,source:"replay",observedAt:"2026-07-19T00:04:00.000Z",sequence:2,state:"idle"}')" \
+  "${PUBLIC_ORIGIN}/api/agent-events")"
+test "${post_restore_event_status}" = "200"
+
+post_restore_latest_count="$(docker compose exec -T postgres psql \
+  -U "${POSTGRES_USER:-oc_kindergarten_user}" \
+  -d "${POSTGRES_DB:-oc_kindergarten}" \
+  -At -c "SELECT count(*) FROM agent_latest_states WHERE agent_id = '${agent_id}' AND state = 'idle';")"
+test "${post_restore_latest_count}" = "1"
 
 printf 'enrollment_api_verification=passed\n'
 printf 'create_pair_activate_owner_lifecycle=passed\n'
 printf 'single_use_and_cross_parent_isolation=passed\n'
 printf 'owner_action_idempotency_and_suspension=passed\n'
 printf 'owner_pending_enrollment_cancellation=passed\n'
-printf 'owner_active_archive_safety_guard=passed\n'
+printf 'owner_archive_restore_and_identity_guard=passed\n'

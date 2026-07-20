@@ -664,6 +664,22 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.familyArchiveAction {
+  min-height: 32px;
+  border: 0;
+  padding: 4px 8px;
+  background: transparent;
+  color: #8b3d3d;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.familyArchiveAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .familyEmptyState {
   border: 1px dashed rgba(23, 50, 74, 0.25);
   border-radius: 8px;
@@ -749,9 +765,36 @@ button:focus-visible {
 
 .familyArchive li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 18px;
   font-size: 12px;
+}
+
+.familyArchive li > div {
+  display: grid;
+  gap: 3px;
+}
+
+.familyArchive li time {
+  color: #71818a;
+}
+
+.familyArchive li button {
+  min-height: 32px;
+  border: 1px solid rgba(41, 125, 182, 0.28);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #145b83;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.familyArchive li button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 @media (max-width: 620px) {

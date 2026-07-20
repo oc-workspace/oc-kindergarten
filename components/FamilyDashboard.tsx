@@ -155,11 +155,15 @@ export default function FamilyDashboard() {
 
   const changeLifecycle = async (
     enrollment: Enrollment,
-    action: 'suspend' | 'resume' | 'archive',
+    action: 'suspend' | 'resume' | 'archive' | 'restore',
   ) => {
     if (
       action === 'archive' &&
-      !window.confirm('撤销这个入园申请？此操作不可撤销。')
+      !window.confirm(
+        enrollment.agent
+          ? '归档这个 Agent？归档后它会离开教室并停止接收事件，你之后可以从已归档列表恢复。'
+          : '撤销这个入园申请？此操作不可撤销。',
+      )
     ) {
       return;
     }
@@ -184,7 +188,11 @@ export default function FamilyDashboard() {
           ? 'Agent 已暂停。'
           : action === 'resume'
             ? 'Agent 已恢复，下一条运行事件会让它重新入场。'
-            : '入园申请已撤销。',
+            : action === 'restore'
+              ? 'Agent 已恢复到暂停状态，请确认后再恢复入园。'
+              : enrollment.agent
+                ? 'Agent 已归档，可从已归档列表恢复。'
+                : '入园申请已撤销。',
       );
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '无法更新 Agent 状态');
@@ -354,6 +362,14 @@ export default function FamilyDashboard() {
                     >
                       {suspended ? '恢复入园' : '暂停入园'}
                     </button>
+                    <button
+                      className="familyArchiveAction"
+                      type="button"
+                      disabled={busyKey !== null}
+                      onClick={() => void changeLifecycle(enrollment, 'archive')}
+                    >
+                      归档
+                    </button>
                   </div>
                 </article>
               );
@@ -401,10 +417,21 @@ export default function FamilyDashboard() {
           <ul>
             {groups.archived.map((enrollment) => (
               <li key={enrollment.id}>
-                <span>{enrollment.agent?.displayName ?? enrollment.nativeAgentId ?? 'Agent'}</span>
-                <time dateTime={enrollment.updatedAt}>
-                  {new Date(enrollment.updatedAt).toLocaleDateString('zh-CN')}
-                </time>
+                <div>
+                  <span>{enrollment.agent?.displayName ?? enrollment.nativeAgentId ?? 'Agent'}</span>
+                  <time dateTime={enrollment.updatedAt}>
+                    {new Date(enrollment.updatedAt).toLocaleDateString('zh-CN')}
+                  </time>
+                </div>
+                {enrollment.agent ? (
+                  <button
+                    type="button"
+                    disabled={busyKey !== null}
+                    onClick={() => void changeLifecycle(enrollment, 'restore')}
+                  >
+                    恢复到暂停
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>

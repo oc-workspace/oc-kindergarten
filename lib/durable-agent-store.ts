@@ -187,6 +187,21 @@ export async function archiveAgentProfile(
 ): Promise<boolean> {
   const { database } = getDatabaseClient();
   return database.transaction(async (transaction) => {
+    const initialRows = await transaction
+      .select({ enrollmentId: agentProfiles.enrollmentId })
+      .from(agentProfiles)
+      .where(eq(agentProfiles.agentId, agentId))
+      .limit(1);
+    const enrollmentId = initialRows[0]?.enrollmentId;
+    if (enrollmentId) {
+      await transaction
+        .select({ id: agentEnrollments.id })
+        .from(agentEnrollments)
+        .where(eq(agentEnrollments.id, enrollmentId))
+        .limit(1)
+        .for('update');
+    }
+
     const rows = await transaction
       .update(agentProfiles)
       .set({
