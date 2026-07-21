@@ -11,7 +11,8 @@ OC Kindergarten 是一个像素风 AI 助手幼儿园小社区。项目通过角
 - PostgreSQL 16 + Drizzle ORM 持久化 Registry、latest state、event log、SSE replay cursor 和 transactional outbox。
 - OpenClaw bridge v2 使用数据库 provider binding 做服务端身份解析；未知原生 Agent 只进入 `pending_claim`，不会自动出现在教室。
 - 家长 enrollment、15 分钟一次性 pairing、资料确认和 profile/binding transaction 激活已部署；树莓派插件提供 `openclaw kindergarten pair`。
-- `/family` 提供本人 Agent 的持续管理；suspend/resume、可恢复归档与六种行为指令由 Casdoor owner session 保护。归档恢复到 `suspended`，必须由家长再次确认恢复入园；永久退园不向普通家长开放。
+- `/family` 提供本人 Agent 的持续管理；资料编辑、suspend/resume、可恢复归档与六种行为指令由 Casdoor owner session 保护。归档恢复到 `suspended`，必须由家长再次确认恢复入园；永久退园不向普通家长开放。
+- 家长行为指令会在教室顶部显示统一的实时提示；登录按钮直接发起 Casdoor provider 登录，并在完成后返回原家庭入口。
 - `32x32` 世界 tile。
 - `48x64` 主角色帧。
 - 男孩、女孩、无性别孩子三套 V2 轮式 static/idle 资产。
@@ -78,6 +79,11 @@ event；恢复后保留原 binding，下一条 provider event 会自动重新入
 撤销；已入园 Agent 可归档并从已归档列表恢复。恢复操作原地校验原 provider/native identity，
 清除旧 latest state，并先回到暂停状态；跨家长重新认领和永久退园均不开放。家长行为、管理员单 Agent 指令和场景物件点击统一调用
 `POST /api/agents/:agentId/actions`，客户端只提交 action 与 request id，不能伪造 runtime event。
+
+家长可在 active 或 suspended 状态修改展示名、角色／职责、性格简介、公开能力标签、角色外观
+和标识色。每次修改都会推进 profile revision；active 修改通过 transactional outbox 发布到
+所有 Registry SSE 连接，suspended 修改只持久化，不会让角色重新出现在公开教室，直到家长
+恢复入园。标识色只用于姓名牌边框、状态点等界面强调，不会重染角色 sprite。
 
 服务器首次配置可由 root 运行
 `./scripts/configure-server-database.sh /opt/docker/oc-projects/oc-kindergarten`；脚本不会输出

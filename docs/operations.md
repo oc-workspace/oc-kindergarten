@@ -1,5 +1,45 @@
 # OC Kindergarten Operations
 
+## Agent profile and direct sign-in rollout
+
+Agent 资料编辑、教室指令提示和 Casdoor 直接登录不新增数据库 migration。部署前仍必须先创建
+PostgreSQL custom-format 备份、备份 mode `0600` 的 `.env`，并记录当前 Web/migrator image
+tag 和 Git commit：
+
+```bash
+./scripts/backup-database.sh
+docker compose build oc-kindergarten migrate
+docker compose run --rm migrate
+docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
+./scripts/verify-enrollment-api.sh
+```
+
+`verify-enrollment-api.sh` 除原有 enrollment、owner action 和归档恢复覆盖外，还必须通过：
+
+- Casdoor provider POST 直跳，并把登录完成后的 callback 保持为 `/family`；
+- active 和 suspended profile 修改、跨家庭 `404`、归档后 `409`；
+- 每次成功修改推进 profile revision，并同步 enrollment draft 和 provider discovery draft；
+- active 修改生成且发布一条 `agent.profile.upserted` outbox，两个同时在线的 Registry SSE
+  连接都收到同一 revision；
+- suspended 修改不生成公开 Registry upsert，Agent 继续从 snapshot 隐藏；显式 resume 后以更新后的
+  资料和更高 revision 重新发布；
+- 验收结束后临时 parent、enrollment、profile、binding、event、cursor、latest state、outbox 和
+  command 全部清理。
+
+自动化通过后，使用可丢弃的真实 Casdoor 家长和 OpenClaw Agent 做浏览器验收：
+
+1. 从未登录的 `/family` 单击一次“使用 Casdoor 登录”，确认直接进入 Casdoor，而不是停在
+   NextAuth provider 选择页；登录后必须返回 `/family`。
+2. 同时打开两个教室标签页，在 `/family` 修改 active Agent 的展示名、角色外观和标识色；两个
+   教室标签页都应在不刷新的情况下更新同一角色，且控制台没有 warning/error。
+3. 暂时出园后修改资料，两个教室标签页都不得让角色重新出现；恢复入园后两页都显示最新资料。
+4. 发送六种家长行为中的至少两种，确认家庭页反馈和教室顶部提示使用相同区域文案。
+5. 归档后确认资料 PATCH 和 runtime event 均被拒绝；完成 restore 后仍先停留在 suspended，必须
+   显式恢复入园。
+
+回滚只切回部署前记录的旧 Web/migrator image；不要还原或删除数据库 volume。profile revision
+和已发布 outbox 可由旧版本安全忽略，重新部署新版本后继续使用。
+
 ## Recoverable archive rollout
 
 可恢复归档不新增数据库 migration。部署前仍必须创建 PostgreSQL custom-format 备份、备份

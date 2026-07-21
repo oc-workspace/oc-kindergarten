@@ -40,6 +40,7 @@ import girlErrorUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-g
 import girlResearchingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/researching/girl-child-researching-4frame-wheelbase-v2-strip-48x64.png';
 import girlSyncingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/syncing/girl-child-syncing-4frame-wheelbase-v2-strip-48x64.png';
 import girlWritingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/writing/girl-child-writing-4frame-wheelbase-v2-strip-48x64.png';
+import { agentActionNotice } from '@/lib/agent-action-notice';
 import {
   AgentEventAdapter,
   AgentEventSource,
@@ -590,6 +591,7 @@ export default function ClassroomSimulation({
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const selectedAgentIdRef = useRef('');
   const [sceneActionStatus, setSceneActionStatus] = useState<string | null>(null);
+  const [classroomNotice, setClassroomNotice] = useState('教室正在自由活动。');
   const [presenceTransition, setPresenceTransition] = useState<
     'joining' | 'leaving' | null
   >(null);
@@ -1038,6 +1040,12 @@ export default function ClassroomSimulation({
             ? event.state
             : `${event.action}@${event.scenePointId}`,
       });
+      if (event.type === 'agent.state' && event.source === 'command') {
+        const displayName = profilesRef.current.get(event.agentId)?.displayName;
+        if (displayName) {
+          setClassroomNotice(agentActionNotice(displayName, event.state));
+        }
+      }
       return true;
     },
     [applyAgentState, applyPresenceEvent],
@@ -1643,20 +1651,25 @@ export default function ClassroomSimulation({
 
   return (
     <section className="canvasWorkspace" aria-label="OC Kindergarten 实时场景">
-      <div className="sceneViewport canvasOnlyViewport">
-        <canvas
-          ref={canvasRef}
-          width={WORLD_SIZE.width}
-          height={WORLD_SIZE.height}
-          onClick={(event) => void handleCanvasClick(event)}
-          className={agentViews.some((agent) => agent.visible) || (isAdmin && adminPanelOpen) ? 'isSceneInteractive' : ''}
-          data-selected-agent={selectedAgentView?.id ?? ''}
-          aria-label="动态注册的 AI agent 从教室入口入场，并在不同功能区之间移动的实时场景"
-        />
-        {!ready && !loadError && (
-          <div className="sceneLoading">正在载入运行时资源…</div>
-        )}
-        {loadError && <div className="sceneLoading sceneError">{loadError}</div>}
+      <div className="classroomStage">
+        <div className="sceneViewport canvasOnlyViewport">
+          <canvas
+            ref={canvasRef}
+            width={WORLD_SIZE.width}
+            height={WORLD_SIZE.height}
+            onClick={(event) => void handleCanvasClick(event)}
+            className={agentViews.some((agent) => agent.visible) || (isAdmin && adminPanelOpen) ? 'isSceneInteractive' : ''}
+            data-selected-agent={selectedAgentView?.id ?? ''}
+            aria-label="动态注册的 AI agent 从教室入口入场，并在不同功能区之间移动的实时场景"
+          />
+          {!ready && !loadError && (
+            <div className="sceneLoading">正在载入运行时资源…</div>
+          )}
+          {loadError && <div className="sceneLoading sceneError">{loadError}</div>}
+        </div>
+        <output className="classroomNotice" aria-live="polite">
+          {classroomNotice}
+        </output>
       </div>
 
       {stressRunId && (

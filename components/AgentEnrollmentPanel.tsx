@@ -491,7 +491,7 @@ export default function AgentEnrollmentPanel() {
                     </div>
                   </fieldset>
                   <label>
-                    <span>角色颜色（可选）</span>
+                    <span>标识色（可选）</span>
                     <input
                       type="color"
                       value={activation.color}

@@ -52,6 +52,12 @@ export function canParentArchiveEnrollment(
   );
 }
 
+export function canParentEditAgentProfile(
+  status: AgentEnrollmentStatus,
+): boolean {
+  return status === 'active' || status === 'suspended';
+}
+
 export interface EnrolledAgentSummary extends ProviderAgentDraft {
   agentId: string;
   displayName: string;

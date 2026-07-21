@@ -9,6 +9,7 @@ import type {
 } from './agent-enrollment-contract';
 import {
   canParentArchiveEnrollment,
+  canParentEditAgentProfile,
   generatePairingCode,
   hashPairingCode,
   nextAgentEnrollmentStatus,
@@ -642,6 +643,98 @@ export async function activateAgentEnrollment(
 
   const view = await enrollmentViewById(parentUserId, enrollmentId);
   if (!view) throw new Error('Agent 激活后无法读取 enrollment');
+  return view;
+}
+
+export async function updateAgentEnrollmentProfile(
+  parentUserId: string,
+  enrollmentId: string,
+  profileInput: AgentActivationInput,
+): Promise<AgentEnrollmentView> {
+  const { database } = getDatabaseClient();
+  await database.transaction(async (transaction) => {
+    const enrollmentRows = await transaction
+      .select()
+      .from(agentEnrollments)
+      .where(
+        and(
+          eq(agentEnrollments.id, enrollmentId),
+          eq(agentEnrollments.parentUserId, parentUserId),
+        ),
+      )
+      .limit(1)
+      .for('update');
+    const enrollment = enrollmentRows[0];
+    if (!enrollment) {
+      throw new AgentEnrollmentError('not_found', 'Agent 入园记录不存在');
+    }
+    if (
+      !canParentEditAgentProfile(
+        enrollment.status as AgentEnrollmentStatus,
+      )
+    ) {
+      throw new AgentEnrollmentError(
+        'invalid_state',
+        '当前入园状态不能修改 Agent 资料',
+      );
+    }
+
+    const now = new Date();
+    const profileRows = await transaction
+      .update(agentProfiles)
+      .set({
+        displayName: profileInput.displayName,
+        characterVariant: profileInput.characterVariant,
+        role: profileInput.role ?? null,
+        personalitySummary: profileInput.personalitySummary ?? null,
+        capabilities: profileInput.capabilities ?? null,
+        color: profileInput.color ?? null,
+        revision: sql`nextval('agent_profile_revision_seq')`,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(agentProfiles.enrollmentId, enrollmentId),
+          eq(agentProfiles.ownerId, parentUserId),
+          isNull(agentProfiles.archivedAt),
+        ),
+      )
+      .returning();
+    const profile = profileRows[0];
+    if (!profile) {
+      throw new AgentEnrollmentError(
+        'invalid_state',
+        'Agent profile 不存在或不属于当前家庭',
+      );
+    }
+
+    await transaction
+      .update(agentEnrollments)
+      .set({ draftProfile: profileInput, updatedAt: now })
+      .where(eq(agentEnrollments.id, enrollmentId));
+    const bindingRows = await transaction
+      .update(providerAgentBindings)
+      .set({ discoveryDraft: profileInput, updatedAt: now })
+      .where(
+        and(
+          eq(providerAgentBindings.agentId, profile.agentId),
+          eq(providerAgentBindings.status, 'active'),
+        ),
+      )
+      .returning({ id: providerAgentBindings.id });
+    if (!bindingRows[0]) {
+      throw new AgentEnrollmentError(
+        'invalid_state',
+        'Agent runtime binding 已失效，不能修改资料',
+      );
+    }
+    if (enrollment.status === 'active') {
+      await appendRegistryUpsert(transaction, profile);
+    }
+  });
+
+  const view = await enrollmentViewById(parentUserId, enrollmentId);
+  if (!view) throw new Error('Agent 资料更新后无法读取 enrollment');
   return view;
 }
 
