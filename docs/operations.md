@@ -40,6 +40,25 @@ docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
 回滚只切回部署前记录的旧 Web/migrator image；不要还原或删除数据库 volume。profile revision
 和已发布 outbox 可由旧版本安全忽略，重新部署新版本后继续使用。
 
+### Acceptance record: 2026-07-21
+
+- Deployed commit: `6aa1f00`；PostgreSQL、`.env` 与旧镜像回滚点为
+  `20260721T130051Z`；
+- PostgreSQL custom-format dump 为
+  `/opt/persist/_backups/oc-kindergarten/oc-kindergarten-20260721T130051Z.dump`，旧 Web/migrator
+  镜像保留为对应 `rollback-20260721T130051Z` tag；
+- 本地 types、runtime regression 和 production build 通过；服务器 Compose build 与 migrator
+  通过，Web recreate 后 `/api/agents` 保留龙宝、Bonnie 和三个 system Agent；
+- `scripts/verify-enrollment-api.sh` 通过 active/suspended profile 更新、跨家庭和 archived guard、
+  revision、draft/discovery 同步、transactional outbox、双 Registry SSE、suspended 隐藏、resume
+  最新资料发布、Casdoor provider 直跳和 `/family` callback，以及原有 enrollment/action/archive/
+  restore 全链路；
+- 验收清理后 verification parent 和 binding 均为 0，pending outbox 为 0；应用最近日志无
+  warning/error，PostgreSQL 保持 healthy；
+- in-app browser 已加载生产 `/family` 并返回 `OC Kindergarten` 标题，但浏览器控制通道在 DOM/
+  截图读取时超时；真实凭据登录后的资料编辑视觉巡检仍按上方浏览器清单人工复核，不将工具超时
+  记作站点故障。
+
 ## Recoverable archive rollout
 
 可恢复归档不新增数据库 migration。部署前仍必须创建 PostgreSQL custom-format 备份、备份
