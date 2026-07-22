@@ -480,7 +480,7 @@ export default function FamilyDashboard() {
       <header className="familyHeader">
         <div>
           <p className="eyebrow">Family</p>
-          <h1>{state.parent.displayName}的家庭</h1>
+          <h1>{state.parent.displayName}的宝宝团</h1>
           <p className="familyCounts">
             {groups.managed.filter((item) => item.status === 'active').length} 名在园
             <span aria-hidden="true">/</span>

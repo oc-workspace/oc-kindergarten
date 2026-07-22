@@ -20,7 +20,7 @@
     "sessionKey": "agent:main:main",
     "observedAt": "2026-07-17T12:00:01.000Z",
     "data": { "promptSummary": "核对资料并更新页面" },
-    "expected": "writing"
+    "expected": "syncing"
   },
   {
     "bridgeVersion": 1,
@@ -42,7 +42,7 @@
     "runId": "run-1",
     "observedAt": "2026-07-17T12:00:03.000Z",
     "data": { "toolName": "web_search", "toolCallId": "call-1" },
-    "expected": "writing"
+    "expected": "syncing"
   },
   {
     "bridgeVersion": 1,

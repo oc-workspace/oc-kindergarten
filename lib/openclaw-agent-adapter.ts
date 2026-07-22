@@ -352,8 +352,8 @@ export class OpenClawAgentAdapter {
       case 'before_agent_run':
         return this.stateEvent(
           event,
-          'writing',
-          optionalString(data, 'promptSummary') ?? '开始处理任务',
+          'syncing',
+          optionalString(data, 'promptSummary') ?? '正在接收并处理消息',
         );
       case 'before_tool_call': {
         const toolName = optionalString(data, 'toolName') ?? 'unknown-tool';
@@ -368,7 +368,7 @@ export class OpenClawAgentAdapter {
         const error = optionalString(data, 'error');
         return error
           ? this.stateEvent(event, 'error', `${toolName} 失败：${error}`)
-          : this.stateEvent(event, 'writing', `${toolName} 已完成，继续整理`);
+          : this.stateEvent(event, 'syncing', `${toolName} 已完成，准备回复`);
       }
       case 'agent_end': {
         const success = data.success !== false;
