@@ -16,7 +16,7 @@ import {
 
 export const APPEARANCE_PRESET_LABELS: Record<AgentAppearancePreset, string> = {
   classic: '经典阳光',
-  meadow: '薄荷草地',
+  meadow: '草地青绿',
 };
 
 const PRESET_DESCRIPTIONS: Record<AgentAppearancePreset, string> = {

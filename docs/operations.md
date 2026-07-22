@@ -24,6 +24,31 @@ syncing、error 动画始终保持同一配色。
 回滚应用时不要删除 `appearance_preset` 列，也不要恢复数据库 volume；旧应用会忽略该列。
 重新部署新应用后已保存的预设继续生效。
 
+### Acceptance record: 2026-07-22
+
+- Appearance implementation commit: `0a8b923`；发布前服务器为 `fd72581`，生产仓库以 fast-forward
+  更新；PostgreSQL、mode `0600` 的 `.env` 与旧 Web/migrator 镜像回滚点为
+  `20260722T081243Z`；
+- PostgreSQL custom-format dump 为
+  `/opt/persist/_backups/oc-kindergarten/oc-kindergarten-20260722T081243Z.dump`，已通过
+  `pg_restore --list` 校验；旧 Web/migrator 镜像分别保留为对应
+  `rollback-20260722T081243Z` tag；
+- 本地 `yarn verify`、Meadow 231 项 runtime approval lock 与 production build 通过；服务器
+  Compose build、migration `0006_useful_rattler.sql` 与 Web recreate 通过，6 条旧 profile 全部
+  回填为 `classic`，Web 根页面返回 `200` 且容器 restart count 为 0；
+- `/api/agents` 在迁移和重建前后均保留龙宝、Bonnie 与三个 system Agent；更新后的接口为五条
+  公开 profile 返回 `appearancePreset: classic`；
+- `scripts/verify-enrollment-api.sh` 通过 `classic` fallback、active 更新为 `meadow`、suspended
+  更新回 `classic`、profile revision、draft/discovery 同步、transactional outbox、双 Registry
+  SSE、suspended 隐藏、resume 最新资料发布、跨家庭/归档保护、Casdoor 直跳与 `/family`
+  callback，以及原有 enrollment/action/archive/restore 全链路；
+- 验收退出后 verification parent、verification binding 与 pending outbox 均为 0；应用部署后日志
+  只有正常启动信息，PostgreSQL 保持 healthy；
+- in-app browser 使用现有家长登录态加载生产 `/family`，实际切换但未保存草地青绿的女孩和男孩
+  预览；四张预览图片均为 48×64 且加载完成，男孩紫罗兰帽显示正确；点击“取消”后龙宝仍为
+  “女孩角色 · 经典阳光”。生产教室画布显示原有五个 Agent，页面控制台无 warning/error。
+  未修改任何真实 Agent 资料；教室内的 `meadow` 实时传播由上述 API/SSE 自动验收覆盖。
+
 ## Agent profile and direct sign-in rollout
 
 Agent 资料编辑、教室指令提示和 Casdoor 直接登录不新增数据库 migration。部署前仍必须先创建
