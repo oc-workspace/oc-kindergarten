@@ -13,8 +13,14 @@ const colorwayRoot = resolve(
   root,
   'assets/design/sprites/characters/v2/colorways/v1/meadow',
 );
+const berryColorwayRoot = resolve(
+  root,
+  'assets/design/sprites/characters/v2/colorways/v1/berry',
+);
 const approvalLockRelative =
   'assets/design/sprites/characters/v2/colorways/v1/approved/meadow-runtime-lock-v1.json';
+const berryApprovalLockRelative =
+  'assets/design/sprites/characters/v2/colorways/v1/approved/berry-runtime-lock-v1.json';
 const characters = [
   ['ai-agent-child-boy', 'boy-child'],
   ['ai-agent-child-girl', 'girl-child'],
@@ -55,6 +61,20 @@ function assertQc(qc: Record<string, unknown>) {
   assert.equal(qc.chroma_fringe_pixels, 0);
   assert.equal(qc.touches_edge, false);
   assert(Number(qc.meadow_pixels) >= 12);
+}
+
+function assertBerryQc(qc: Record<string, unknown>, boy: boolean) {
+  assert.equal(qc.alpha_exact_match, true);
+  assert.equal(qc.bbox_exact_match, true);
+  assert.equal(qc.changed_pixels_outside_target_masks, 0);
+  assert.equal(qc.unchanged_target_pixels, 0);
+  assert.equal(qc.touches_edge, false);
+  assert(Number(qc.clothing_pixels_recolored) >= 12);
+  if (boy) {
+    assert(Number(qc.cap_pixels_recolored) >= 6);
+  } else {
+    assert.equal(qc.cap_pixels_recolored, 0);
+  }
 }
 
 assert.deepEqual(AGENT_APPEARANCE_PRESETS, ['classic', 'meadow']);
@@ -169,6 +189,96 @@ assert.equal(approvalLock.files.length, 231);
 for (const file of approvalLock.files) {
   assert.equal(sha256(resolve(root, file.path)), file.sha256, file.path);
 }
+
+let berryRuntimeSheetCount = 0;
+for (const [directory, prefix] of characters) {
+  const characterRoot = resolve(berryColorwayRoot, directory);
+  const idleRoot = resolve(characterRoot, 'idle');
+  assert.deepEqual(
+    pngSize(resolve(idleRoot, `${prefix}-idle-berry-v1-strip-48x64.png`)),
+    [192, 64],
+  );
+  const idleMetadata = metadata(
+    resolve(idleRoot, `${prefix}-idle-berry-v1-meta.json`),
+  );
+  assert.equal(idleMetadata.status, 'approved');
+  assert.equal(idleMetadata.approval_lock, berryApprovalLockRelative);
+  assert.equal(idleMetadata.approved_on, '2026-07-22');
+  assert(Array.isArray(idleMetadata.qc));
+  idleMetadata.qc.forEach((qc) =>
+    assertBerryQc(qc, directory === 'ai-agent-child-boy'),
+  );
+  berryRuntimeSheetCount += 1;
+
+  for (const action of actions) {
+    const actionRoot = resolve(characterRoot, 'actions/v1', action);
+    assert.deepEqual(
+      pngSize(
+        resolve(actionRoot, `${prefix}-${action}-berry-v1-strip-48x64.png`),
+      ),
+      [192, 64],
+    );
+    const actionMetadata = metadata(
+      resolve(actionRoot, `${prefix}-${action}-berry-v1-meta.json`),
+    );
+    assert.equal(actionMetadata.status, 'approved');
+    assert.equal(actionMetadata.approval_lock, berryApprovalLockRelative);
+    assert.equal(actionMetadata.approved_on, '2026-07-22');
+    assert(Array.isArray(actionMetadata.qc));
+    actionMetadata.qc.forEach((qc) =>
+      assertBerryQc(qc, directory === 'ai-agent-child-boy'),
+    );
+    berryRuntimeSheetCount += 1;
+  }
+
+  const movementRoot = resolve(characterRoot, 'moving/v1');
+  assert.deepEqual(
+    pngSize(
+      resolve(
+        movementRoot,
+        `${prefix}-move-8dir-4frame-berry-v1-48x64.png`,
+      ),
+    ),
+    [192, 512],
+  );
+  const movementMetadata = metadata(
+    resolve(
+      movementRoot,
+      `${prefix}-move-8dir-4frame-berry-v1-meta.json`,
+    ),
+  );
+  assert.equal(movementMetadata.status, 'approved');
+  assert.equal(movementMetadata.approval_lock, berryApprovalLockRelative);
+  assert.equal(movementMetadata.approved_on, '2026-07-22');
+  assert(!Array.isArray(movementMetadata.qc));
+  const directions = Object.values(movementMetadata.qc);
+  assert.equal(directions.length, 8);
+  directions
+    .flat()
+    .forEach((qc) =>
+      assertBerryQc(qc, directory === 'ai-agent-child-boy'),
+    );
+  berryRuntimeSheetCount += 1;
+}
+assert.equal(berryRuntimeSheetCount, 21);
+
+const berryApprovalLock = JSON.parse(
+  readFileSync(resolve(root, berryApprovalLockRelative), 'utf8'),
+) as {
+  lock_id: string;
+  status: string;
+  preset: string;
+  locked_file_count: number;
+  files: Array<{ path: string; sha256: string }>;
+};
+assert.equal(berryApprovalLock.lock_id, 'berry-runtime-lock-v1');
+assert.equal(berryApprovalLock.status, 'approved');
+assert.equal(berryApprovalLock.preset, 'berry');
+assert.equal(berryApprovalLock.locked_file_count, 231);
+assert.equal(berryApprovalLock.files.length, 231);
+for (const file of berryApprovalLock.files) {
+  assert.equal(sha256(resolve(root, file.path)), file.sha256, file.path);
+}
 console.log(
-  'Agent appearance regression passed: classic fallback, 21 Meadow runtime sheets and 231-file approval lock',
+  'Agent appearance regression passed: classic fallback, Meadow/Berry 21-sheet sets and two 231-file approval locks; Berry remains unexposed',
 );
