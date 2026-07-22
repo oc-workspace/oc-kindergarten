@@ -30,6 +30,31 @@ docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
 回滚只切回部署前 Web 镜像；不要恢复数据库 volume，也不要删除 `agent_event_log`。旧应用会忽略
 新增 API 和界面，之后重新部署新应用即可继续读取原历史。
 
+### Acceptance record: 2026-07-22
+
+- Family activity timeline implementation commit: `84af036`；发布前生产提交为 `521ddeb`，服务器
+  以 fast-forward 更新。此次复用现有事件表和索引，没有运行数据库 migration；
+- 发布回滚点为 `20260722T092206Z`。PostgreSQL custom-format dump 位于
+  `/opt/persist/_backups/oc-kindergarten/oc-kindergarten-20260722T092206Z.dump`，mode `0600`，
+  已通过 `pg_restore --list` 校验；`.env` 备份为
+  `/opt/persist/_backups/oc-kindergarten/.env-20260722T092206Z`；旧 Web 镜像保留为
+  `oc-kindergarten:rollback-20260722T092206Z`；
+- 本地 `yarn verify` 与 production build 全部通过，构建产物包含
+  `/api/enrollments/[enrollmentId]/activity`；服务器 Compose build、Web recreate 和根页面 `200`
+  通过。新 Web 镜像为 `sha256:a3d294f1861c47c8293a3169c86a727064600577d52ba629f5034b9f952d07d0`，
+  容器 restart count 为 0，PostgreSQL 保持 healthy；
+- 扩展后的 `scripts/verify-enrollment-api.sh` 在生产通过 owner-only 权限、未登录/非法游标、跨家庭
+  隔离、安全中文摘要、原始 payload/source/metadata 隐藏、两页游标无重复、归档后历史保留，
+  并继续通过 profile revision、transactional outbox、双 Registry SSE、Casdoor 回调和原有
+  enrollment/action/archive/restore 全链路；
+- in-app browser 使用现有家长登录态只读验收生产 `/family`：active Agent 空状态正确；已归档 Agent
+  首屏显示五条安全中文活动，`查看更多` 追加到六条且无重复；390×844 视口下卡片为单列、时间移到
+  内容列、页面宽度为 390px 且无横向溢出。浏览器控制台无 warning/error，验收没有发送指令、恢复
+  归档或修改任何真实 Agent；
+- 部署后公开 Registry 仍只有龙宝、Bonnie、小花、小探和小光五条原有 profile，全部保持
+  `appearancePreset: classic`；验收清理后 verification parent、verification binding 和未发布
+  outbox 均为 0，应用日志只有正常启动信息。
+
 ## Appearance preset rollout
 
 外观预设新增 `agent_profiles.appearance_preset`，migration
