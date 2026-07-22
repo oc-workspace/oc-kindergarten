@@ -105,6 +105,28 @@ executing、syncing、error 动画始终保持同一配色。
   “女孩角色 · 经典阳光”。生产教室画布显示原有五个 Agent，页面控制台无 warning/error。
   未修改任何真实 Agent 资料；教室内的 `meadow` 实时传播由上述 API/SSE 自动验收覆盖。
 
+### Berry acceptance record: 2026-07-22
+
+- Berry 资产审批提交为 `cee7628`，应用接入提交为 `f5ebe75`；发布前生产仓库为 `b95c6c6`，
+  以 fast-forward 更新到 `f5ebe75`；本次扩展沿用既有文本列，没有新增 migration 或 schema 变更；
+- PostgreSQL custom-format dump 为
+  `/opt/persist/_backups/oc-kindergarten/oc-kindergarten-20260722T135058Z.dump`，已用 PostgreSQL 16
+  `pg_restore --list` 校验；mode `0600` 的环境备份为
+  `/opt/persist/_backups/oc-kindergarten/.env-20260722T135039Z`，旧 Web 镜像保留为
+  `oc-kindergarten:rollback-20260722T135039Z`；
+- 本地 `yarn verify` 通过类型、完整 runtime 回归、Meadow/Berry 两份 231 文件 approval lock 与
+  production build；服务器 Compose build 和仅 Web force-recreate 通过，Web/PostgreSQL restart
+  count 均为 0，PostgreSQL 保持 healthy；
+- 扩展后的 `scripts/verify-enrollment-api.sh` 通过 `classic` fallback、active 更新为 `berry`、
+  suspended 更新为 `meadow`、profile revision、enrollment/provider draft 同步、transactional
+  outbox、双 Registry SSE、暂停隐藏与恢复发布，以及跨家庭、归档、Casdoor 和活动时间线原有链路；
+- 验收清理后 verification parent、binding、Agent 和 pending outbox 均为 0；公开 Registry 仍只有
+  龙宝、Bonnie、小花、小探和小光五条原有 profile，全部保持 `appearancePreset: classic`；
+- in-app browser 在生产 `/family` 中无保存地选择男孩、女孩和无性别角色的“莓果珊瑚”，三张
+  Berry 预览均完成加载且原始尺寸为 48×64；男孩莓色帽冠与经典黄色帽檐正确。点击“取消”后龙宝
+  仍为“女孩角色 · 经典阳光”，生产教室画布和五个原有 Agent 正常，页面无横向溢出，控制台无
+  warning/error，未修改任何真实 Agent 资料。
+
 ## Agent profile and direct sign-in rollout
 
 Agent 资料编辑、教室指令提示和 Casdoor 直接登录不新增数据库 migration。部署前仍必须先创建
