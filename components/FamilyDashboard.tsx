@@ -16,6 +16,7 @@ import type { AgentAppearancePreset } from '@/lib/agent-registry-contract';
 import AgentAppearancePicker, {
   APPEARANCE_PRESET_LABELS,
 } from './AgentAppearancePicker';
+import AgentActivityTimeline from './AgentActivityTimeline';
 import CasdoorSignInButton from './CasdoorSignInButton';
 
 type EnrollmentStatus =
@@ -124,6 +125,9 @@ export default function FamilyDashboard() {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastActions, setLastActions] = useState<Record<string, AgentAction>>({});
+  const [activityRefreshes, setActivityRefreshes] = useState<
+    Record<string, number>
+  >({});
   const [editingEnrollmentId, setEditingEnrollmentId] = useState<string | null>(
     null,
   );
@@ -273,6 +277,10 @@ export default function FamilyDashboard() {
       setLastActions((current) => ({
         ...current,
         [enrollment.agent!.agentId]: action,
+      }));
+      setActivityRefreshes((current) => ({
+        ...current,
+        [enrollment.id]: (current[enrollment.id] ?? 0) + 1,
       }));
       setNotice(agentActionNotice(enrollment.agent.displayName, action));
     } catch (error) {
@@ -504,6 +512,12 @@ export default function FamilyDashboard() {
                     </button>
                   </div>
 
+                  <AgentActivityTimeline
+                    enrollmentId={enrollment.id}
+                    agentName={agent.displayName}
+                    refreshToken={activityRefreshes[enrollment.id] ?? 0}
+                  />
+
                   {editing && profileDraft ? (
                     <form
                       className="familyAgentEditForm"
@@ -675,20 +689,29 @@ export default function FamilyDashboard() {
           <ul>
             {groups.archived.map((enrollment) => (
               <li key={enrollment.id}>
-                <div>
-                  <span>{enrollment.agent?.displayName ?? enrollment.nativeAgentId ?? 'Agent'}</span>
-                  <time dateTime={enrollment.updatedAt}>
-                    {new Date(enrollment.updatedAt).toLocaleDateString('zh-CN')}
-                  </time>
+                <div className="familyArchivedAgentRow">
+                  <div>
+                    <span>{enrollment.agent?.displayName ?? enrollment.nativeAgentId ?? 'Agent'}</span>
+                    <time dateTime={enrollment.updatedAt}>
+                      {new Date(enrollment.updatedAt).toLocaleDateString('zh-CN')}
+                    </time>
+                  </div>
+                  {enrollment.agent ? (
+                    <button
+                      type="button"
+                      disabled={busyKey !== null}
+                      onClick={() => void changeLifecycle(enrollment, 'restore')}
+                    >
+                      恢复到暂停
+                    </button>
+                  ) : null}
                 </div>
                 {enrollment.agent ? (
-                  <button
-                    type="button"
-                    disabled={busyKey !== null}
-                    onClick={() => void changeLifecycle(enrollment, 'restore')}
-                  >
-                    恢复到暂停
-                  </button>
+                  <AgentActivityTimeline
+                    compact
+                    enrollmentId={enrollment.id}
+                    agentName={enrollment.agent.displayName}
+                  />
                 ) : null}
               </li>
             ))}

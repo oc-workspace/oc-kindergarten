@@ -1,5 +1,35 @@
 # OC Kindergarten Operations
 
+## Family activity timeline rollout
+
+家庭活动时间线复用现有 `agent_event_log` 和 `agent_event_log_agent_created_idx`，不新增数据库
+migration。部署前仍要备份数据库和 mode `0600` 的 `.env`，并保留当前 Web 镜像；只需重建 Web：
+
+```bash
+./scripts/backup-database.sh
+docker compose build oc-kindergarten
+docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
+./scripts/verify-enrollment-api.sh
+```
+
+`GET /api/enrollments/:enrollmentId/activity` 必须保持以下边界：
+
+- 未登录返回 `401`；缺失 enrollment、无 profile 和跨家庭访问统一返回 `404`；
+- `limit` 默认为 20，范围为 1–50；`cursor` 是上一页最后一项的正整数日志 ID，使用
+  `id < cursor` 倒序读取，非法参数返回 `400`；
+- active、suspended 和 archived 均允许原 owner 只读查看历史；归档期间不接受新 runtime event；
+- 响应只包含 cursor、kind、tone、中文 title/detail 和 observedAt，不得返回原始 payload、source、
+  metadata、prompt、tool、request id、session 或错误详情；
+- `scripts/verify-enrollment-api.sh` 必须通过 owner 指令摘要、跨家庭隔离、两页游标无重复、归档后
+  历史保留和临时数据完整清理。
+
+浏览器验收需在 `/family` 展开 active 与 archived Agent 的“最近活动”，确认空状态、五条首屏、
+“查看更多”、中文时间和移动端布局；给 active Agent 发送行为指令后，已打开的时间线应刷新并显示
+对应指令。验收不要为了制造数据修改需要保留的真实 Agent，可使用自动清理的 verification 身份。
+
+回滚只切回部署前 Web 镜像；不要恢复数据库 volume，也不要删除 `agent_event_log`。旧应用会忽略
+新增 API 和界面，之后重新部署新应用即可继续读取原历史。
+
 ## Appearance preset rollout
 
 外观预设新增 `agent_profiles.appearance_preset`，migration

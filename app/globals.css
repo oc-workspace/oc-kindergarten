@@ -782,6 +782,149 @@ button:focus-visible {
   opacity: 0.48;
 }
 
+.familyActivityTimeline {
+  min-width: 0;
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.familyActivityToggle {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  padding: 3px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  text-align: left;
+}
+
+.familyActivityToggle span:last-child {
+  color: var(--blue);
+  font-size: 11px;
+}
+
+.familyActivityPanel {
+  padding: 8px 0 2px;
+}
+
+.familyActivityStatus {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.familyActivityList {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  list-style: none;
+}
+
+.familyActivityList li {
+  min-width: 0;
+  border-bottom: 1px solid rgba(23, 50, 74, 0.09);
+  padding: 10px 0;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.familyActivityList li:last-child {
+  border-bottom: 0;
+}
+
+.familyActivityMarker {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #7d929d;
+  box-shadow: 0 0 0 3px rgba(125, 146, 157, 0.12);
+}
+
+.familyActivityList .tone-positive .familyActivityMarker {
+  background: #2f8a61;
+  box-shadow: 0 0 0 3px rgba(47, 138, 97, 0.12);
+}
+
+.familyActivityList .tone-attention .familyActivityMarker {
+  background: #c78614;
+  box-shadow: 0 0 0 3px rgba(199, 134, 20, 0.14);
+}
+
+.familyActivityList .tone-danger .familyActivityMarker {
+  background: #bd4a45;
+  box-shadow: 0 0 0 3px rgba(189, 74, 69, 0.13);
+}
+
+.familyActivityList li > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.familyActivityList strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.familyActivityList li > div > span,
+.familyActivityList time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.familyActivityList time {
+  white-space: nowrap;
+}
+
+.familyActivityMore,
+.familyActivityError button {
+  min-height: 32px;
+  border: 1px solid rgba(41, 125, 182, 0.28);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #145b83;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.familyActivityMore {
+  margin-top: 6px;
+}
+
+.familyActivityMore:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.familyActivityError {
+  border-left: 3px solid #bd4a45;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fff2ef;
+}
+
+.familyActivityError p {
+  margin: 0;
+  color: #8b3d3d;
+  font-size: 12px;
+}
+
 .familyAgentEditForm {
   grid-column: 1 / -1;
   border-top: 1px solid var(--line);
@@ -952,14 +1095,21 @@ button:focus-visible {
 }
 
 .familyArchive li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-bottom: 1px solid rgba(23, 50, 74, 0.09);
+  padding-bottom: 8px;
+  display: grid;
   gap: 18px;
   font-size: 12px;
 }
 
-.familyArchive li > div {
+.familyArchivedAgentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.familyArchivedAgentRow > div {
   display: grid;
   gap: 3px;
 }
@@ -968,7 +1118,7 @@ button:focus-visible {
   color: #71818a;
 }
 
-.familyArchive li button {
+.familyArchivedAgentRow > button {
   min-height: 32px;
   border: 1px solid rgba(41, 125, 182, 0.28);
   border-radius: 6px;
@@ -980,9 +1130,14 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.familyArchive li button:disabled {
+.familyArchivedAgentRow > button:disabled {
   cursor: not-allowed;
   opacity: 0.48;
+}
+
+.familyActivityTimeline.isCompact {
+  border-top-style: dashed;
+  padding-top: 6px;
 }
 
 @media (max-width: 620px) {
@@ -1070,6 +1225,19 @@ button:focus-visible {
 
   .familyAgentEditActions > button {
     flex: 1;
+  }
+
+  .familyActivityList li {
+    grid-template-columns: 8px minmax(0, 1fr);
+  }
+
+  .familyActivityList time {
+    grid-column: 2;
+  }
+
+  .familyArchivedAgentRow {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

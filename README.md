@@ -12,6 +12,7 @@ OC Kindergarten 是一个像素风 AI 助手幼儿园小社区。项目通过角
 - OpenClaw bridge v2 使用数据库 provider binding 做服务端身份解析；未知原生 Agent 只进入 `pending_claim`，不会自动出现在教室。
 - 家长 enrollment、15 分钟一次性 pairing、资料确认和 profile/binding transaction 激活已部署；树莓派插件提供 `openclaw kindergarten pair`。
 - `/family` 提供本人 Agent 的持续管理；资料编辑、suspend/resume、可恢复归档与六种行为指令由 Casdoor owner session 保护。归档恢复到 `suspended`，必须由家长再次确认恢复入园；永久退园不向普通家长开放。
+- 家庭页为 active、suspended 和 archived Agent 提供 owner-only 最近活动时间线；事件以安全中文摘要展示，并使用倒序游标分页，不向浏览器返回原始 payload、prompt 或 runtime/session 标识。
 - 家长行为指令会在教室顶部显示统一的实时提示；登录按钮直接发起 Casdoor provider 登录，并在完成后返回原家庭入口。
 - `32x32` 世界 tile。
 - `48x64` 主角色帧。
@@ -80,6 +81,12 @@ event；恢复后保留原 binding，下一条 provider event 会自动重新入
 撤销；已入园 Agent 可归档并从已归档列表恢复。恢复操作原地校验原 provider/native identity，
 清除旧 latest state，并先回到暂停状态；跨家长重新认领和永久退园均不开放。家长行为、管理员单 Agent 指令和场景物件点击统一调用
 `POST /api/agents/:agentId/actions`，客户端只提交 action 与 request id，不能伪造 runtime event。
+
+每个已绑定 Agent 都可以从家庭页展开“最近活动”。服务端通过
+`GET /api/enrollments/:enrollmentId/activity?limit=5&cursor=...` 读取既有
+`agent_event_log`，只允许 enrollment owner 访问；缺失记录和跨家庭访问统一返回 `404`。
+时间线显示进入/离开教室、家长指令、活动区域、任务完成和异常等安全摘要。归档只停止新事件，
+不会删除 owner 可见的既有历史；原始事件 payload 始终留在服务端。
 
 家长可在 active 或 suspended 状态修改展示名、角色／职责、性格简介、公开能力标签、角色造型、
 服装配色预设和标识色。`classic` 是兼容旧记录的默认值，`meadow` 会切换整套审核后的 sprite

@@ -352,6 +352,30 @@ other_parent_action_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
   "${PUBLIC_ORIGIN}/api/agents/${agent_id}/actions")"
 test "${other_parent_action_status}" = "403"
 
+signed_out_activity_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity")"
+test "${signed_out_activity_status}" = "401"
+
+invalid_activity_cursor_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity?cursor=private")"
+test "${invalid_activity_cursor_status}" = "400"
+
+other_parent_activity_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  -H "Cookie: ${other_session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity")"
+test "${other_parent_activity_status}" = "404"
+
+command_activity_result="$(curl -fsS \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity?limit=5")"
+test "$(printf '%s' "${command_activity_result}" | jq -r '.schemaVersion')" = "1"
+test "$(printf '%s' "${command_activity_result}" | jq -r '.items | length')" = "1"
+test "$(printf '%s' "${command_activity_result}" | jq -r '.items[0].kind')" = "command"
+test "$(printf '%s' "${command_activity_result}" | jq -r '.items[0].title')" = '已收到“阅读”指令'
+test "$(printf '%s' "${command_activity_result}" | jq -r '.items[0].detail')" = "准备前往阅读角"
+test "$(printf '%s' "${command_activity_result}" | jq -r '.items[0] | has("payload") or has("source") or has("metadata")')" = "false"
+
 command_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
@@ -435,10 +459,34 @@ pre_archive_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
   "${PUBLIC_ORIGIN}/api/agent-events")"
 test "${pre_archive_event_status}" = "200"
 
+activity_first_page="$(curl -fsS \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity?limit=1")"
+test "$(printf '%s' "${activity_first_page}" | jq -r '.items | length')" = "1"
+test "$(printf '%s' "${activity_first_page}" | jq -r '.items[0].title')" = "开始写画活动"
+test "$(printf '%s' "${activity_first_page}" | jq -r '.items[0].detail')" = "前往写画桌"
+activity_first_cursor="$(printf '%s' "${activity_first_page}" | jq -er '.items[0].cursor')"
+activity_next_cursor="$(printf '%s' "${activity_first_page}" | jq -er '.nextCursor')"
+test "${activity_first_cursor}" = "${activity_next_cursor}"
+
+activity_second_page="$(curl -fsS \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity?limit=1&cursor=${activity_next_cursor}")"
+test "$(printf '%s' "${activity_second_page}" | jq -r '.items | length')" = "1"
+test "$(printf '%s' "${activity_second_page}" | jq -r '.items[0].kind')" = "command"
+test "$(printf '%s' "${activity_second_page}" | jq -r '.items[0].cursor')" != "${activity_first_cursor}"
+test "$(printf '%s' "${activity_second_page}" | jq -r '.nextCursor')" = "null"
+
 archive_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
   "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/archive")"
 test "$(printf '%s' "${archive_result}" | jq -r '.enrollment.status')" = "archived"
+
+archived_activity_result="$(curl -fsS \
+  -H "Cookie: ${session_cookie}" \
+  "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activity?limit=5")"
+test "$(printf '%s' "${archived_activity_result}" | jq -r '.items | length')" = "2"
+test "$(printf '%s' "${archived_activity_result}" | jq -r '.items[0].title')" = "开始写画活动"
 
 repeat_archive_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "Cookie: ${session_cookie}" \
@@ -559,3 +607,4 @@ printf 'profile_revision_registry_outbox_and_dual_sse=passed\n'
 printf 'casdoor_direct_signin_family_callback=passed\n'
 printf 'owner_pending_enrollment_cancellation=passed\n'
 printf 'owner_archive_restore_and_identity_guard=passed\n'
+printf 'owner_activity_timeline_privacy_and_pagination=passed\n'
