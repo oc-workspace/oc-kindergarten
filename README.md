@@ -17,7 +17,7 @@ OC Kindergarten 是一个像素风 AI 助手幼儿园小社区。项目通过角
 - `32x32` 世界 tile。
 - `48x64` 主角色帧。
 - 男孩、女孩、无性别孩子三套 V2 轮式 static/idle 资产。
-- `classic` 与 `meadow` 两套完整角色外观预设；每套覆盖三名角色的 idle、八方向 moving 和五类任务动画，不使用运行时整图染色。
+- `classic`、`meadow` 与 `berry` 三套完整角色外观预设；每套覆盖三名角色的 idle、八方向 moving 和五类任务动画，不使用运行时整图染色。
 - 三人各 8 方向 × 4 帧的轮式 moving 图集，移动为 `125ms/帧`。
 - 三人各 4 帧 researching 阅读、executing 积木和 writing 写画动作。
 - 教室 Canvas 运行时、实时 Y-sort 和 8 邻域 A* 寻路。
@@ -89,8 +89,8 @@ event；恢复后保留原 binding，下一条 provider event 会自动重新入
 不会删除 owner 可见的既有历史；原始事件 payload 始终留在服务端。
 
 家长可在 active 或 suspended 状态修改展示名、角色／职责、性格简介、公开能力标签、角色造型、
-服装配色预设和标识色。`classic` 是兼容旧记录的默认值，`meadow` 会切换整套审核后的 sprite
-资源。每次修改都会推进 profile revision；active 修改通过 transactional outbox 发布到
+服装配色预设和标识色。`classic` 是兼容旧记录的默认值，`meadow`（草地青绿）和
+`berry`（莓果珊瑚）都会切换整套审核后的 sprite 资源。每次修改都会推进 profile revision；active 修改通过 transactional outbox 发布到
 所有 Registry SSE 连接，suspended 修改只持久化，不会让角色重新出现在公开教室，直到家长
 恢复入园。标识色只用于姓名牌边框、状态点等界面强调，不会重染角色 sprite。
 

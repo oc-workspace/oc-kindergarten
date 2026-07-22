@@ -5,6 +5,9 @@ import Image, { type StaticImageData } from 'next/image';
 import classicBoyPreview from '@/assets/design/sprites/characters/v2/ai-agent-child-boy/idle/frames/boy-child-idle-wheelbase-v2-1-48x64.png';
 import classicGenderlessPreview from '@/assets/design/sprites/characters/v2/ai-agent-child-genderless/idle/frames/genderless-child-idle-wheelbase-v2-1-48x64.png';
 import classicGirlPreview from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/idle/frames/girl-child-idle-wheelbase-v2-1-48x64.png';
+import berryBoyPreview from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/idle/frames/boy-child-idle-berry-v1-1-48x64.png';
+import berryGenderlessPreview from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/idle/frames/genderless-child-idle-berry-v1-1-48x64.png';
+import berryGirlPreview from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/idle/frames/girl-child-idle-berry-v1-1-48x64.png';
 import meadowBoyPreview from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/idle/frames/boy-child-idle-meadow-v1-1-48x64.png';
 import meadowGenderlessPreview from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/idle/frames/genderless-child-idle-meadow-v1-1-48x64.png';
 import meadowGirlPreview from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/idle/frames/girl-child-idle-meadow-v1-1-48x64.png';
@@ -17,11 +20,13 @@ import {
 export const APPEARANCE_PRESET_LABELS: Record<AgentAppearancePreset, string> = {
   classic: '经典阳光',
   meadow: '草地青绿',
+  berry: '莓果珊瑚',
 };
 
 const PRESET_DESCRIPTIONS: Record<AgentAppearancePreset, string> = {
   classic: '黄色服装与背包，沿用当前经典角色。',
   meadow: '薄荷绿与青绿色服装；男孩搭配紫罗兰帽，完整动作均已适配。',
+  berry: '莓红与珊瑚色服装；男孩保留经典黄色帽檐，完整动作均已适配。',
 };
 
 const PREVIEWS: Record<
@@ -37,6 +42,11 @@ const PREVIEWS: Record<
     boy: meadowBoyPreview,
     girl: meadowGirlPreview,
     genderless: meadowGenderlessPreview,
+  },
+  berry: {
+    boy: berryBoyPreview,
+    girl: berryGirlPreview,
+    genderless: berryGenderlessPreview,
   },
 };
 

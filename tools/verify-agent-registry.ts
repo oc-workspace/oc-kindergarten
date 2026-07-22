@@ -31,6 +31,15 @@ if (!parsedOwner.ok) process.exit(1);
 assert.equal(parsedOwner.profile.color, '#7b61c9');
 assert.equal(parsedOwner.profile.appearancePreset, 'meadow');
 
+const berryAppearance = parseAgentProfileInput({
+  ...ownerProfile,
+  appearancePreset: 'berry',
+});
+assert.equal(berryAppearance.ok, true);
+if (berryAppearance.ok) {
+  assert.equal(berryAppearance.profile.appearancePreset, 'berry');
+}
+
 const legacyAppearance = parseAgentProfileInput({
   ...ownerProfile,
   appearancePreset: undefined,

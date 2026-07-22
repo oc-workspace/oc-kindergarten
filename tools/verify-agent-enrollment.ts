@@ -34,7 +34,7 @@ const pairing = parseRuntimeEnrollmentPairing({
       role: 'Research helper',
       capabilities: ['research', 'writing', 'research'],
       characterVariant: 'genderless',
-      appearancePreset: 'meadow',
+      appearancePreset: 'berry',
       color: '#6576D8',
     },
   },
@@ -49,7 +49,7 @@ assert(
   '颜色应规范化',
 );
 assert(
-  pairing.pairing.discovery.profileDraft?.appearancePreset === 'meadow',
+  pairing.pairing.discovery.profileDraft?.appearancePreset === 'berry',
   '外观预设应保留',
 );
 

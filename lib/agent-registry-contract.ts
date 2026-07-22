@@ -6,7 +6,11 @@ export const AGENT_CHARACTER_VARIANTS = [
   'genderless',
 ] as const;
 
-export const AGENT_APPEARANCE_PRESETS = ['classic', 'meadow'] as const;
+export const AGENT_APPEARANCE_PRESETS = [
+  'classic',
+  'meadow',
+  'berry',
+] as const;
 export const DEFAULT_AGENT_APPEARANCE_PRESET = 'classic' as const;
 
 export const AGENT_REGISTRATION_ACTORS = ['owner', 'agent', 'system'] as const;

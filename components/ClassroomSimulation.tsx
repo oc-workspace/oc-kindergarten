@@ -61,6 +61,27 @@ import meadowGirlErrorUrl from '@/assets/design/sprites/characters/v2/colorways/
 import meadowGirlResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/researching/girl-child-researching-meadow-v1-strip-48x64.png';
 import meadowGirlSyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/syncing/girl-child-syncing-meadow-v1-strip-48x64.png';
 import meadowGirlWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/writing/girl-child-writing-meadow-v1-strip-48x64.png';
+import berryBoyIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/idle/boy-child-idle-berry-v1-strip-48x64.png';
+import berryBoyMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/moving/v1/boy-child-move-8dir-4frame-berry-v1-48x64.png';
+import berryBoyExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/actions/v1/executing/boy-child-executing-berry-v1-strip-48x64.png';
+import berryBoyErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/actions/v1/error/boy-child-error-berry-v1-strip-48x64.png';
+import berryBoyResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/actions/v1/researching/boy-child-researching-berry-v1-strip-48x64.png';
+import berryBoySyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/actions/v1/syncing/boy-child-syncing-berry-v1-strip-48x64.png';
+import berryBoyWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-boy/actions/v1/writing/boy-child-writing-berry-v1-strip-48x64.png';
+import berryGenderlessIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/idle/genderless-child-idle-berry-v1-strip-48x64.png';
+import berryGenderlessMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/moving/v1/genderless-child-move-8dir-4frame-berry-v1-48x64.png';
+import berryGenderlessExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/actions/v1/executing/genderless-child-executing-berry-v1-strip-48x64.png';
+import berryGenderlessErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/actions/v1/error/genderless-child-error-berry-v1-strip-48x64.png';
+import berryGenderlessResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/actions/v1/researching/genderless-child-researching-berry-v1-strip-48x64.png';
+import berryGenderlessSyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/actions/v1/syncing/genderless-child-syncing-berry-v1-strip-48x64.png';
+import berryGenderlessWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-genderless/actions/v1/writing/genderless-child-writing-berry-v1-strip-48x64.png';
+import berryGirlIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/idle/girl-child-idle-berry-v1-strip-48x64.png';
+import berryGirlMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/moving/v1/girl-child-move-8dir-4frame-berry-v1-48x64.png';
+import berryGirlExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/actions/v1/executing/girl-child-executing-berry-v1-strip-48x64.png';
+import berryGirlErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/actions/v1/error/girl-child-error-berry-v1-strip-48x64.png';
+import berryGirlResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/actions/v1/researching/girl-child-researching-berry-v1-strip-48x64.png';
+import berryGirlSyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/actions/v1/syncing/girl-child-syncing-berry-v1-strip-48x64.png';
+import berryGirlWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/berry/ai-agent-child-girl/actions/v1/writing/girl-child-writing-berry-v1-strip-48x64.png';
 import { agentActionNotice } from '@/lib/agent-action-notice';
 import {
   AgentEventAdapter,
@@ -207,7 +228,28 @@ type ImageKey =
   | 'meadowGenderlessWriting'
   | 'meadowGenderlessExecuting'
   | 'meadowGenderlessError'
-  | 'meadowGenderlessSyncing';
+  | 'meadowGenderlessSyncing'
+  | 'berryBoyIdle'
+  | 'berryBoyMove'
+  | 'berryBoyResearching'
+  | 'berryBoyWriting'
+  | 'berryBoyExecuting'
+  | 'berryBoyError'
+  | 'berryBoySyncing'
+  | 'berryGirlIdle'
+  | 'berryGirlMove'
+  | 'berryGirlResearching'
+  | 'berryGirlWriting'
+  | 'berryGirlExecuting'
+  | 'berryGirlError'
+  | 'berryGirlSyncing'
+  | 'berryGenderlessIdle'
+  | 'berryGenderlessMove'
+  | 'berryGenderlessResearching'
+  | 'berryGenderlessWriting'
+  | 'berryGenderlessExecuting'
+  | 'berryGenderlessError'
+  | 'berryGenderlessSyncing';
 
 interface AgentSpec {
   id: string;
@@ -425,6 +467,41 @@ const CHARACTER_ASSETS: Record<
       },
     },
   },
+  berry: {
+    boy: {
+      movingImage: 'berryBoyMove',
+      stateImages: {
+        idle: 'berryBoyIdle',
+        writing: 'berryBoyWriting',
+        researching: 'berryBoyResearching',
+        executing: 'berryBoyExecuting',
+        syncing: 'berryBoySyncing',
+        error: 'berryBoyError',
+      },
+    },
+    girl: {
+      movingImage: 'berryGirlMove',
+      stateImages: {
+        idle: 'berryGirlIdle',
+        writing: 'berryGirlWriting',
+        researching: 'berryGirlResearching',
+        executing: 'berryGirlExecuting',
+        syncing: 'berryGirlSyncing',
+        error: 'berryGirlError',
+      },
+    },
+    genderless: {
+      movingImage: 'berryGenderlessMove',
+      stateImages: {
+        idle: 'berryGenderlessIdle',
+        writing: 'berryGenderlessWriting',
+        researching: 'berryGenderlessResearching',
+        executing: 'berryGenderlessExecuting',
+        syncing: 'berryGenderlessSyncing',
+        error: 'berryGenderlessError',
+      },
+    },
+  },
 };
 
 function colorFromAgentId(agentId: string): string {
@@ -586,6 +663,27 @@ const IMAGE_URLS: Record<ImageKey, string> = {
   meadowGenderlessExecuting: meadowGenderlessExecutingUrl.src,
   meadowGenderlessError: meadowGenderlessErrorUrl.src,
   meadowGenderlessSyncing: meadowGenderlessSyncingUrl.src,
+  berryBoyIdle: berryBoyIdleUrl.src,
+  berryBoyMove: berryBoyMoveUrl.src,
+  berryBoyResearching: berryBoyResearchingUrl.src,
+  berryBoyWriting: berryBoyWritingUrl.src,
+  berryBoyExecuting: berryBoyExecutingUrl.src,
+  berryBoyError: berryBoyErrorUrl.src,
+  berryBoySyncing: berryBoySyncingUrl.src,
+  berryGirlIdle: berryGirlIdleUrl.src,
+  berryGirlMove: berryGirlMoveUrl.src,
+  berryGirlResearching: berryGirlResearchingUrl.src,
+  berryGirlWriting: berryGirlWritingUrl.src,
+  berryGirlExecuting: berryGirlExecutingUrl.src,
+  berryGirlError: berryGirlErrorUrl.src,
+  berryGirlSyncing: berryGirlSyncingUrl.src,
+  berryGenderlessIdle: berryGenderlessIdleUrl.src,
+  berryGenderlessMove: berryGenderlessMoveUrl.src,
+  berryGenderlessResearching: berryGenderlessResearchingUrl.src,
+  berryGenderlessWriting: berryGenderlessWritingUrl.src,
+  berryGenderlessExecuting: berryGenderlessExecutingUrl.src,
+  berryGenderlessError: berryGenderlessErrorUrl.src,
+  berryGenderlessSyncing: berryGenderlessSyncingUrl.src,
 };
 
 function createAgents(profiles: readonly AgentProfile[]): RuntimeAgent[] {

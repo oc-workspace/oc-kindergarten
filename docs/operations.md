@@ -69,12 +69,13 @@ docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
 ./scripts/verify-enrollment-api.sh
 ```
 
-自动验收除原有 profile revision、outbox 和双 SSE 覆盖外，还要确认：旧激活请求不提交
-`appearancePreset` 时返回 `classic`；active 修改为 `meadow` 后 profile、enrollment draft、
-provider discovery draft、Registry snapshot、outbox 与两个 SSE 连接字段一致；suspended 改回
-`classic` 不公开发布，resume 后才重新出现。浏览器验收需分别选择三种角色造型，在
-`classic`/`meadow` 间切换，确认预览与教室中的待机、移动、reading、writing、executing、
-syncing、error 动画始终保持同一配色。
+后续增加预设只扩展既有文本契约与审核后的 sprite 资源，不需要新增数据库 migration。自动验收除
+原有 profile revision、outbox 和双 SSE 覆盖外，还要确认：旧激活请求不提交
+`appearancePreset` 时返回 `classic`；active 修改为 `berry` 后 profile、enrollment draft、
+provider discovery draft、Registry snapshot、outbox 与两个 SSE 连接字段一致；suspended 修改为
+`meadow` 不公开发布，resume 后才重新出现。浏览器验收需分别选择三种角色造型，在
+`classic`、`meadow` 与 `berry` 间切换，确认预览与教室中的待机、移动、reading、writing、
+executing、syncing、error 动画始终保持同一配色。
 
 回滚应用时不要删除 `appearance_preset` 列，也不要恢复数据库 volume；旧应用会忽略该列。
 重新部署新应用后已保存的预设继续生效。

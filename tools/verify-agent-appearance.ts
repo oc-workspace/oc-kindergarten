@@ -77,7 +77,7 @@ function assertBerryQc(qc: Record<string, unknown>, boy: boolean) {
   }
 }
 
-assert.deepEqual(AGENT_APPEARANCE_PRESETS, ['classic', 'meadow']);
+assert.deepEqual(AGENT_APPEARANCE_PRESETS, ['classic', 'meadow', 'berry']);
 assert.equal(DEFAULT_AGENT_APPEARANCE_PRESET, 'classic');
 
 let runtimeSheetCount = 0;
@@ -280,5 +280,5 @@ for (const file of berryApprovalLock.files) {
   assert.equal(sha256(resolve(root, file.path)), file.sha256, file.path);
 }
 console.log(
-  'Agent appearance regression passed: classic fallback, Meadow/Berry 21-sheet sets and two 231-file approval locks; Berry remains unexposed',
+  'Agent appearance regression passed: classic fallback, exposed Meadow/Berry presets, two 21-sheet sets and two 231-file approval locks',
 );
