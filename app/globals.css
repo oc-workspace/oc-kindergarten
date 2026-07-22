@@ -1937,6 +1937,75 @@ button:focus-visible {
   box-shadow: 0 24px 80px rgba(38, 74, 92, 0.2);
 }
 
+.agentSpeechLayer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.agentSpeechBubble {
+  --agent-speech-accent: var(--blue);
+  position: absolute;
+  width: max-content;
+  max-width: min(240px, 62vw);
+  border: 2px solid var(--agent-speech-accent);
+  border-radius: 14px;
+  padding: 9px 12px 10px;
+  display: grid;
+  gap: 2px;
+  transform: translate(-50%, -100%);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 24px rgba(23, 50, 74, 0.2);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  animation: agentSpeechEnter 180ms ease-out both;
+}
+
+.agentSpeechBubble::before,
+.agentSpeechBubble::after {
+  position: absolute;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.agentSpeechBubble::before {
+  bottom: -10px;
+  border-width: 9px 8px 0;
+  border-color: var(--agent-speech-accent) transparent transparent;
+}
+
+.agentSpeechBubble::after {
+  bottom: -7px;
+  border-width: 7px 6px 0;
+  border-color: #fff transparent transparent;
+}
+
+.agentSpeechBubbleName {
+  color: var(--agent-speech-accent);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+@keyframes agentSpeechEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 5px)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1);
+  }
+}
+
 .classroomNotice {
   min-width: 0;
   min-height: 42px;
@@ -2301,6 +2370,15 @@ button:focus-visible {
 
   .canvasOnlyViewport {
     border-radius: 12px;
+  }
+
+  .agentSpeechBubble {
+    max-width: min(190px, 68vw);
+    border-width: 1px;
+    border-radius: 10px;
+    padding: 6px 8px 7px;
+    font-size: 10px;
+    line-height: 1.35;
   }
 
   .classroomNotice {
