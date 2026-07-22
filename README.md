@@ -16,6 +16,7 @@ OC Kindergarten 是一个像素风 AI 助手幼儿园小社区。项目通过角
 - `32x32` 世界 tile。
 - `48x64` 主角色帧。
 - 男孩、女孩、无性别孩子三套 V2 轮式 static/idle 资产。
+- `classic` 与 `meadow` 两套完整角色外观预设；每套覆盖三名角色的 idle、八方向 moving 和五类任务动画，不使用运行时整图染色。
 - 三人各 8 方向 × 4 帧的轮式 moving 图集，移动为 `125ms/帧`。
 - 三人各 4 帧 researching 阅读、executing 积木和 writing 写画动作。
 - 教室 Canvas 运行时、实时 Y-sort 和 8 邻域 A* 寻路。
@@ -70,7 +71,7 @@ Agent event token 完全分离。Casdoor 初始化与只读边界检查分别使
 openclaw kindergarten pair XXXXX-XXXXX-XXXXX-XXXXX --agent main
 ```
 
-返回页面审阅 Agent 草稿并亲自选择角色外观后，服务端会在同一 transaction 中创建
+返回页面审阅 Agent 草稿并亲自选择角色造型与服装配色预设后，服务端会在同一 transaction 中创建
 owner profile、激活 provider binding 并发布 Registry 变化。`scripts/verify-enrollment-api.sh`
 用自动清理的临时身份验证单次码、跨家长权限和完整激活链路。
 
@@ -80,8 +81,9 @@ event；恢复后保留原 binding，下一条 provider event 会自动重新入
 清除旧 latest state，并先回到暂停状态；跨家长重新认领和永久退园均不开放。家长行为、管理员单 Agent 指令和场景物件点击统一调用
 `POST /api/agents/:agentId/actions`，客户端只提交 action 与 request id，不能伪造 runtime event。
 
-家长可在 active 或 suspended 状态修改展示名、角色／职责、性格简介、公开能力标签、角色外观
-和标识色。每次修改都会推进 profile revision；active 修改通过 transactional outbox 发布到
+家长可在 active 或 suspended 状态修改展示名、角色／职责、性格简介、公开能力标签、角色造型、
+服装配色预设和标识色。`classic` 是兼容旧记录的默认值，`meadow` 会切换整套审核后的 sprite
+资源。每次修改都会推进 profile revision；active 修改通过 transactional outbox 发布到
 所有 Registry SSE 连接，suspended 修改只持久化，不会让角色重新出现在公开教室，直到家长
 恢复入园。标识色只用于姓名牌边框、状态点等界面强调，不会重染角色 sprite。
 

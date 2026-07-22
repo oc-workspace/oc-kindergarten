@@ -12,6 +12,7 @@
   "include": [
     "./verify-openclaw-adapters.ts",
     "./verify-agent-registry.ts",
+    "./verify-agent-appearance.ts",
     "./verify-provider-binding.ts",
     "./verify-parent-profile.ts",
     "./verify-agent-enrollment.ts",

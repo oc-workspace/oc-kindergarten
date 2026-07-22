@@ -1,5 +1,29 @@
 # OC Kindergarten Operations
 
+## Appearance preset rollout
+
+外观预设新增 `agent_profiles.appearance_preset`，migration
+`drizzle/0006_useful_rattler.sql` 以非空默认值 `classic` 回填旧记录。部署前必须备份数据库和
+`.env`，并保留当前 Web/migrator 镜像；先运行 migrator，再替换 Web：
+
+```bash
+./scripts/backup-database.sh
+docker compose build oc-kindergarten migrate
+docker compose run --rm migrate
+docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
+./scripts/verify-enrollment-api.sh
+```
+
+自动验收除原有 profile revision、outbox 和双 SSE 覆盖外，还要确认：旧激活请求不提交
+`appearancePreset` 时返回 `classic`；active 修改为 `meadow` 后 profile、enrollment draft、
+provider discovery draft、Registry snapshot、outbox 与两个 SSE 连接字段一致；suspended 改回
+`classic` 不公开发布，resume 后才重新出现。浏览器验收需分别选择三种角色造型，在
+`classic`/`meadow` 间切换，确认预览与教室中的待机、移动、reading、writing、executing、
+syncing、error 动画始终保持同一配色。
+
+回滚应用时不要删除 `appearance_preset` 列，也不要恢复数据库 volume；旧应用会忽略该列。
+重新部署新应用后已保存的预设继续生效。
+
 ## Agent profile and direct sign-in rollout
 
 Agent 资料编辑、教室指令提示和 Casdoor 直接登录不新增数据库 migration。部署前仍必须先创建

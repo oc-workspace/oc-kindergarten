@@ -455,6 +455,108 @@ button:focus-visible {
   color: #12547c;
 }
 
+.agentAppearanceField {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid rgba(23, 50, 74, 0.13);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.agentAppearanceField legend {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.agentAppearanceField > p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.agentAppearanceOptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.agentAppearanceOptions > label {
+  position: relative;
+  min-width: 0;
+  min-height: 154px;
+  border: 1px solid rgba(23, 50, 74, 0.16);
+  border-radius: 11px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.agentAppearanceOptions > label.isSelected {
+  border-color: var(--blue);
+  background: var(--sky);
+  box-shadow: 0 0 0 2px rgba(41, 125, 182, 0.1);
+}
+
+.agentAppearanceOptions input,
+.agentConfirmForm .agentAppearanceOptions input {
+  position: absolute;
+  width: 1px;
+  min-height: 1px;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+}
+
+.agentAppearancePreview {
+  width: 96px;
+  height: 128px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, #eff5f2 25%, transparent 25%),
+    linear-gradient(-45deg, #eff5f2 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eff5f2 75%),
+    linear-gradient(-45deg, transparent 75%, #eff5f2 75%),
+    #fff;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.agentAppearancePreview img {
+  width: 96px;
+  height: 128px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.agentAppearanceCopy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.agentAppearanceCopy strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.agentAppearanceCopy small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .agentActiveSummary {
   display: flex;
   align-items: flex-start;
@@ -907,6 +1009,10 @@ button:focus-visible {
 
   .agentConfirmForm,
   .agentVariantOptions {
+    grid-template-columns: 1fr;
+  }
+
+  .agentAppearanceOptions {
     grid-template-columns: 1fr;
   }
 

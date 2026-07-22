@@ -12,6 +12,10 @@ import {
   AGENT_ACTION_LOCATIONS,
   agentActionNotice,
 } from '@/lib/agent-action-notice';
+import type { AgentAppearancePreset } from '@/lib/agent-registry-contract';
+import AgentAppearancePicker, {
+  APPEARANCE_PRESET_LABELS,
+} from './AgentAppearancePicker';
 import CasdoorSignInButton from './CasdoorSignInButton';
 
 type EnrollmentStatus =
@@ -41,6 +45,7 @@ interface EnrollmentAgent {
   agentId: string;
   displayName: string;
   characterVariant: CharacterVariant;
+  appearancePreset?: AgentAppearancePreset;
   role?: string;
   personalitySummary?: string;
   capabilities?: string[];
@@ -53,6 +58,7 @@ interface AgentProfileDraft {
   personalitySummary: string;
   capabilities: string;
   characterVariant: CharacterVariant;
+  appearancePreset: AgentAppearancePreset;
   color: string;
 }
 
@@ -108,6 +114,7 @@ function profileDraftFor(agent: EnrollmentAgent): AgentProfileDraft {
     personalitySummary: agent.personalitySummary ?? '',
     capabilities: agent.capabilities?.join(', ') ?? '',
     characterVariant: agent.characterVariant,
+    appearancePreset: agent.appearancePreset ?? 'classic',
     color: agent.color ?? '#297db6',
   };
 }
@@ -326,6 +333,7 @@ export default function FamilyDashboard() {
           body: JSON.stringify({
             displayName: draft.displayName,
             characterVariant: draft.characterVariant,
+            appearancePreset: draft.appearancePreset,
             color: draft.color,
             ...(draft.role.trim() ? { role: draft.role } : {}),
             ...(draft.personalitySummary.trim()
@@ -440,7 +448,8 @@ export default function FamilyDashboard() {
                         </span>
                       </div>
                       <p>
-                        {agent.role ?? 'AI Agent'} · {VARIANT_LABELS[agent.characterVariant]}
+                        {agent.role ?? 'AI Agent'} · {VARIANT_LABELS[agent.characterVariant]} ·{' '}
+                        {APPEARANCE_PRESET_LABELS[agent.appearancePreset ?? 'classic']}
                       </p>
                       <code>{enrollment.provider}/{enrollment.nativeAgentId}</code>
                     </div>
@@ -575,6 +584,15 @@ export default function FamilyDashboard() {
                           )}
                         </div>
                       </fieldset>
+                      <AgentAppearancePicker
+                        idPrefix={`profile-${enrollment.id}`}
+                        characterVariant={profileDraft.characterVariant}
+                        value={profileDraft.appearancePreset}
+                        disabled={busyKey !== null}
+                        onChange={(appearancePreset) =>
+                          updateProfileDraft(enrollment.id, { appearancePreset })
+                        }
+                      />
                       <label className="familyAgentColorField">
                         <span>标识色</span>
                         <div>

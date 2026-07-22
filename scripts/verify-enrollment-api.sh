@@ -238,6 +238,7 @@ activate_result="$(curl -fsS -X POST \
   --data-binary '{"displayName":"Verification Agent","characterVariant":"genderless","role":"Enrollment verification","capabilities":["verification"],"color":"#6576d8"}' \
   "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/activate")"
 test "$(printf '%s' "${activate_result}" | jq -r '.enrollment.status')" = "active"
+test "$(printf '%s' "${activate_result}" | jq -r '.enrollment.agent.appearancePreset')" = "classic"
 agent_id="$(printf '%s' "${activate_result}" | jq -er '.enrollment.agent.agentId')"
 
 owner_count="$(docker compose exec -T postgres psql \
@@ -281,11 +282,12 @@ wait_for_pattern "${sse_tmp_dir}/registry-tab-2.sse" ': Agent Registry API v1 du
 active_profile_result="$(curl -fsS -X PATCH \
   -H "Cookie: ${session_cookie}" \
   -H 'Content-Type: application/json' \
-  --data-binary '{"displayName":"Verification Active Profile","characterVariant":"girl","role":"Active profile verification","personalitySummary":"Checks owner profile updates","capabilities":["profile-update","sse"],"color":"#2a7db6"}' \
+  --data-binary '{"displayName":"Verification Active Profile","characterVariant":"girl","appearancePreset":"meadow","role":"Active profile verification","personalitySummary":"Checks owner profile updates","capabilities":["profile-update","sse"],"color":"#2a7db6"}' \
   "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/profile")"
 test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.status')" = "active"
 test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.agent.displayName')" = "Verification Active Profile"
 test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.agent.characterVariant')" = "girl"
+test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.agent.appearancePreset')" = "meadow"
 test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.agent.color')" = "#2a7db6"
 test "$(printf '%s' "${active_profile_result}" | jq -r '.enrollment.agent.capabilities | join(",")')" = "profile-update,sse"
 active_profile_revision="$(printf '%s' "${active_profile_result}" | jq -er '.enrollment.agent.revision')"
@@ -293,6 +295,8 @@ test "${active_profile_revision}" -gt "${profile_revision_before}"
 
 wait_for_pattern "${sse_tmp_dir}/registry-tab-1.sse" '"displayName":"Verification Active Profile"'
 wait_for_pattern "${sse_tmp_dir}/registry-tab-2.sse" '"displayName":"Verification Active Profile"'
+wait_for_pattern "${sse_tmp_dir}/registry-tab-1.sse" '"appearancePreset":"meadow"'
+wait_for_pattern "${sse_tmp_dir}/registry-tab-2.sse" '"appearancePreset":"meadow"'
 wait_for_pattern "${sse_tmp_dir}/registry-tab-1.sse" "\"revision\":${active_profile_revision}"
 wait_for_pattern "${sse_tmp_dir}/registry-tab-2.sse" "\"revision\":${active_profile_revision}"
 stop_sse_captures
@@ -301,25 +305,25 @@ active_profile_db_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
   -v ON_ERROR_STOP=1 \
-  -At -c "SELECT count(*) FROM agent_profiles WHERE agent_id = '${agent_id}' AND display_name = 'Verification Active Profile' AND character_variant = 'girl' AND role = 'Active profile verification' AND personality_summary = 'Checks owner profile updates' AND capabilities = '[\"profile-update\", \"sse\"]'::jsonb AND color = '#2a7db6' AND revision = ${active_profile_revision};")"
+  -At -c "SELECT count(*) FROM agent_profiles WHERE agent_id = '${agent_id}' AND display_name = 'Verification Active Profile' AND character_variant = 'girl' AND appearance_preset = 'meadow' AND role = 'Active profile verification' AND personality_summary = 'Checks owner profile updates' AND capabilities = '[\"profile-update\", \"sse\"]'::jsonb AND color = '#2a7db6' AND revision = ${active_profile_revision};")"
 test "${active_profile_db_count}" = "1"
 
 active_profile_sync_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
   -v ON_ERROR_STOP=1 \
-  -At -c "SELECT count(*) FROM agent_enrollments e JOIN provider_agent_bindings b ON b.agent_id = '${agent_id}' WHERE e.id = '${enrollment_id}' AND e.draft_profile->>'displayName' = 'Verification Active Profile' AND e.draft_profile->>'characterVariant' = 'girl' AND b.discovery_draft->>'displayName' = 'Verification Active Profile' AND b.discovery_draft->>'characterVariant' = 'girl';")"
+  -At -c "SELECT count(*) FROM agent_enrollments e JOIN provider_agent_bindings b ON b.agent_id = '${agent_id}' WHERE e.id = '${enrollment_id}' AND e.draft_profile->>'displayName' = 'Verification Active Profile' AND e.draft_profile->>'characterVariant' = 'girl' AND e.draft_profile->>'appearancePreset' = 'meadow' AND b.discovery_draft->>'displayName' = 'Verification Active Profile' AND b.discovery_draft->>'characterVariant' = 'girl' AND b.discovery_draft->>'appearancePreset' = 'meadow';")"
 test "${active_profile_sync_count}" = "1"
 
 active_profile_outbox_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
   -v ON_ERROR_STOP=1 \
-  -At -c "SELECT count(*) FROM event_outbox WHERE id > ${registry_cursor_before} AND topic = 'agent.registry' AND aggregate_id = '${agent_id}' AND payload->>'type' = 'agent.profile.upserted' AND payload->>'revision' = '${active_profile_revision}' AND payload#>>'{profile,displayName}' = 'Verification Active Profile' AND published_at IS NOT NULL;")"
+  -At -c "SELECT count(*) FROM event_outbox WHERE id > ${registry_cursor_before} AND topic = 'agent.registry' AND aggregate_id = '${agent_id}' AND payload->>'type' = 'agent.profile.upserted' AND payload->>'revision' = '${active_profile_revision}' AND payload#>>'{profile,displayName}' = 'Verification Active Profile' AND payload#>>'{profile,appearancePreset}' = 'meadow' AND published_at IS NOT NULL;")"
 test "${active_profile_outbox_count}" = "1"
 
 active_registry_profile_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
-  jq --arg agent_id "${agent_id}" --argjson revision "${active_profile_revision}" '[.profiles[] | select(.agentId == $agent_id and .displayName == "Verification Active Profile" and .characterVariant == "girl" and .color == "#2a7db6" and .revision == $revision)] | length')"
+  jq --arg agent_id "${agent_id}" --argjson revision "${active_profile_revision}" '[.profiles[] | select(.agentId == $agent_id and .displayName == "Verification Active Profile" and .characterVariant == "girl" and .appearancePreset == "meadow" and .color == "#2a7db6" and .revision == $revision)] | length')"
 test "${active_registry_profile_count}" = "1"
 
 action_request_id="verification-action-${test_stamp}"
@@ -375,10 +379,11 @@ suspended_registry_cursor_before="$(docker compose exec -T postgres psql \
 suspended_profile_result="$(curl -fsS -X PATCH \
   -H "Cookie: ${session_cookie}" \
   -H 'Content-Type: application/json' \
-  --data-binary '{"displayName":"Verification Suspended Profile","characterVariant":"genderless","role":"Suspended profile verification","capabilities":["profile-update"],"color":"#6576d8"}' \
+  --data-binary '{"displayName":"Verification Suspended Profile","characterVariant":"genderless","appearancePreset":"classic","role":"Suspended profile verification","capabilities":["profile-update"],"color":"#6576d8"}' \
   "${PUBLIC_ORIGIN}/api/enrollments/${enrollment_id}/profile")"
 test "$(printf '%s' "${suspended_profile_result}" | jq -r '.enrollment.status')" = "suspended"
 test "$(printf '%s' "${suspended_profile_result}" | jq -r '.enrollment.agent.displayName')" = "Verification Suspended Profile"
+test "$(printf '%s' "${suspended_profile_result}" | jq -r '.enrollment.agent.appearancePreset')" = "classic"
 suspended_profile_revision="$(printf '%s' "${suspended_profile_result}" | jq -er '.enrollment.agent.revision')"
 test "${suspended_profile_revision}" -gt "${suspended_profile_revision_before}"
 
@@ -393,7 +398,7 @@ suspended_profile_sync_count="$(docker compose exec -T postgres psql \
   -U "${POSTGRES_USER:-oc_kindergarten_user}" \
   -d "${POSTGRES_DB:-oc_kindergarten}" \
   -v ON_ERROR_STOP=1 \
-  -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.revision = ${suspended_profile_revision} AND p.display_name = 'Verification Suspended Profile' AND e.draft_profile->>'displayName' = 'Verification Suspended Profile' AND b.discovery_draft->>'displayName' = 'Verification Suspended Profile';")"
+  -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.revision = ${suspended_profile_revision} AND p.display_name = 'Verification Suspended Profile' AND p.appearance_preset = 'classic' AND e.draft_profile->>'displayName' = 'Verification Suspended Profile' AND e.draft_profile->>'appearancePreset' = 'classic' AND b.discovery_draft->>'displayName' = 'Verification Suspended Profile' AND b.discovery_draft->>'appearancePreset' = 'classic';")"
 test "${suspended_profile_sync_count}" = "1"
 
 suspended_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
@@ -420,7 +425,7 @@ resume_result="$(curl -fsS -X POST \
 test "$(printf '%s' "${resume_result}" | jq -r '.enrollment.status')" = "active"
 
 resumed_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
-  jq --arg agent_id "${agent_id}" --argjson revision "${suspended_profile_revision}" '[.profiles[] | select(.agentId == $agent_id and .displayName == "Verification Suspended Profile" and .characterVariant == "genderless" and .color == "#6576d8" and .revision > $revision)] | length')"
+  jq --arg agent_id "${agent_id}" --argjson revision "${suspended_profile_revision}" '[.profiles[] | select(.agentId == $agent_id and .displayName == "Verification Suspended Profile" and .characterVariant == "genderless" and .appearancePreset == "classic" and .color == "#6576d8" and .revision > $revision)] | length')"
 test "${resumed_registry_count}" = "1"
 
 pre_archive_event_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \

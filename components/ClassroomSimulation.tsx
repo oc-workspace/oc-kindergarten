@@ -40,6 +40,27 @@ import girlErrorUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-g
 import girlResearchingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/researching/girl-child-researching-4frame-wheelbase-v2-strip-48x64.png';
 import girlSyncingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/syncing/girl-child-syncing-4frame-wheelbase-v2-strip-48x64.png';
 import girlWritingUrl from '@/assets/design/sprites/characters/v2/ai-agent-child-girl/actions/v1/writing/girl-child-writing-4frame-wheelbase-v2-strip-48x64.png';
+import meadowBoyIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/idle/boy-child-idle-meadow-v1-strip-48x64.png';
+import meadowBoyMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/moving/v1/boy-child-move-8dir-4frame-meadow-v1-48x64.png';
+import meadowBoyExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/actions/v1/executing/boy-child-executing-meadow-v1-strip-48x64.png';
+import meadowBoyErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/actions/v1/error/boy-child-error-meadow-v1-strip-48x64.png';
+import meadowBoyResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/actions/v1/researching/boy-child-researching-meadow-v1-strip-48x64.png';
+import meadowBoySyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/actions/v1/syncing/boy-child-syncing-meadow-v1-strip-48x64.png';
+import meadowBoyWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-boy/actions/v1/writing/boy-child-writing-meadow-v1-strip-48x64.png';
+import meadowGenderlessIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/idle/genderless-child-idle-meadow-v1-strip-48x64.png';
+import meadowGenderlessMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/moving/v1/genderless-child-move-8dir-4frame-meadow-v1-48x64.png';
+import meadowGenderlessExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/actions/v1/executing/genderless-child-executing-meadow-v1-strip-48x64.png';
+import meadowGenderlessErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/actions/v1/error/genderless-child-error-meadow-v1-strip-48x64.png';
+import meadowGenderlessResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/actions/v1/researching/genderless-child-researching-meadow-v1-strip-48x64.png';
+import meadowGenderlessSyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/actions/v1/syncing/genderless-child-syncing-meadow-v1-strip-48x64.png';
+import meadowGenderlessWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-genderless/actions/v1/writing/genderless-child-writing-meadow-v1-strip-48x64.png';
+import meadowGirlIdleUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/idle/girl-child-idle-meadow-v1-strip-48x64.png';
+import meadowGirlMoveUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/moving/v1/girl-child-move-8dir-4frame-meadow-v1-48x64.png';
+import meadowGirlExecutingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/executing/girl-child-executing-meadow-v1-strip-48x64.png';
+import meadowGirlErrorUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/error/girl-child-error-meadow-v1-strip-48x64.png';
+import meadowGirlResearchingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/researching/girl-child-researching-meadow-v1-strip-48x64.png';
+import meadowGirlSyncingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/syncing/girl-child-syncing-meadow-v1-strip-48x64.png';
+import meadowGirlWritingUrl from '@/assets/design/sprites/characters/v2/colorways/v1/meadow/ai-agent-child-girl/actions/v1/writing/girl-child-writing-meadow-v1-strip-48x64.png';
 import { agentActionNotice } from '@/lib/agent-action-notice';
 import {
   AgentEventAdapter,
@@ -51,6 +72,7 @@ import {
   parseAgentRuntimeEvent,
 } from '@/lib/agent-event-contract';
 import {
+  AgentAppearancePreset,
   AgentProfile,
   parseAgentProfile,
 } from '@/lib/agent-registry-contract';
@@ -164,7 +186,28 @@ type ImageKey =
   | 'genderlessWriting'
   | 'genderlessExecuting'
   | 'genderlessError'
-  | 'genderlessSyncing';
+  | 'genderlessSyncing'
+  | 'meadowBoyIdle'
+  | 'meadowBoyMove'
+  | 'meadowBoyResearching'
+  | 'meadowBoyWriting'
+  | 'meadowBoyExecuting'
+  | 'meadowBoyError'
+  | 'meadowBoySyncing'
+  | 'meadowGirlIdle'
+  | 'meadowGirlMove'
+  | 'meadowGirlResearching'
+  | 'meadowGirlWriting'
+  | 'meadowGirlExecuting'
+  | 'meadowGirlError'
+  | 'meadowGirlSyncing'
+  | 'meadowGenderlessIdle'
+  | 'meadowGenderlessMove'
+  | 'meadowGenderlessResearching'
+  | 'meadowGenderlessWriting'
+  | 'meadowGenderlessExecuting'
+  | 'meadowGenderlessError'
+  | 'meadowGenderlessSyncing';
 
 interface AgentSpec {
   id: string;
@@ -309,40 +352,77 @@ function drawAgentNameTag(
 }
 
 const CHARACTER_ASSETS: Record<
-  CharacterId,
-  Pick<AgentSpec, 'movingImage' | 'stateImages'>
+  AgentAppearancePreset,
+  Record<CharacterId, Pick<AgentSpec, 'movingImage' | 'stateImages'>>
 > = {
-  boy: {
-    movingImage: 'boyMove',
-    stateImages: {
-      idle: 'boyIdle',
-      writing: 'boyWriting',
-      researching: 'boyResearching',
-      executing: 'boyExecuting',
-      syncing: 'boySyncing',
-      error: 'boyError',
+  classic: {
+    boy: {
+      movingImage: 'boyMove',
+      stateImages: {
+        idle: 'boyIdle',
+        writing: 'boyWriting',
+        researching: 'boyResearching',
+        executing: 'boyExecuting',
+        syncing: 'boySyncing',
+        error: 'boyError',
+      },
+    },
+    girl: {
+      movingImage: 'girlMove',
+      stateImages: {
+        idle: 'girlIdle',
+        writing: 'girlWriting',
+        researching: 'girlResearching',
+        executing: 'girlExecuting',
+        syncing: 'girlSyncing',
+        error: 'girlError',
+      },
+    },
+    genderless: {
+      movingImage: 'genderlessMove',
+      stateImages: {
+        idle: 'genderlessIdle',
+        writing: 'genderlessWriting',
+        researching: 'genderlessResearching',
+        executing: 'genderlessExecuting',
+        syncing: 'genderlessSyncing',
+        error: 'genderlessError',
+      },
     },
   },
-  girl: {
-    movingImage: 'girlMove',
-    stateImages: {
-      idle: 'girlIdle',
-      writing: 'girlWriting',
-      researching: 'girlResearching',
-      executing: 'girlExecuting',
-      syncing: 'girlSyncing',
-      error: 'girlError',
+  meadow: {
+    boy: {
+      movingImage: 'meadowBoyMove',
+      stateImages: {
+        idle: 'meadowBoyIdle',
+        writing: 'meadowBoyWriting',
+        researching: 'meadowBoyResearching',
+        executing: 'meadowBoyExecuting',
+        syncing: 'meadowBoySyncing',
+        error: 'meadowBoyError',
+      },
     },
-  },
-  genderless: {
-    movingImage: 'genderlessMove',
-    stateImages: {
-      idle: 'genderlessIdle',
-      writing: 'genderlessWriting',
-      researching: 'genderlessResearching',
-      executing: 'genderlessExecuting',
-      syncing: 'genderlessSyncing',
-      error: 'genderlessError',
+    girl: {
+      movingImage: 'meadowGirlMove',
+      stateImages: {
+        idle: 'meadowGirlIdle',
+        writing: 'meadowGirlWriting',
+        researching: 'meadowGirlResearching',
+        executing: 'meadowGirlExecuting',
+        syncing: 'meadowGirlSyncing',
+        error: 'meadowGirlError',
+      },
+    },
+    genderless: {
+      movingImage: 'meadowGenderlessMove',
+      stateImages: {
+        idle: 'meadowGenderlessIdle',
+        writing: 'meadowGenderlessWriting',
+        researching: 'meadowGenderlessResearching',
+        executing: 'meadowGenderlessExecuting',
+        syncing: 'meadowGenderlessSyncing',
+        error: 'meadowGenderlessError',
+      },
     },
   },
 };
@@ -357,7 +437,9 @@ function colorFromAgentId(agentId: string): string {
 }
 
 function profileToAgentSpec(profile: AgentProfile): AgentSpec {
-  const assets = CHARACTER_ASSETS[profile.characterVariant];
+  const assets = CHARACTER_ASSETS[profile.appearancePreset][
+    profile.characterVariant
+  ];
   return {
     id: profile.agentId,
     character: profile.characterVariant,
@@ -483,6 +565,27 @@ const IMAGE_URLS: Record<ImageKey, string> = {
   genderlessExecuting: genderlessExecutingUrl.src,
   genderlessError: genderlessErrorUrl.src,
   genderlessSyncing: genderlessSyncingUrl.src,
+  meadowBoyIdle: meadowBoyIdleUrl.src,
+  meadowBoyMove: meadowBoyMoveUrl.src,
+  meadowBoyResearching: meadowBoyResearchingUrl.src,
+  meadowBoyWriting: meadowBoyWritingUrl.src,
+  meadowBoyExecuting: meadowBoyExecutingUrl.src,
+  meadowBoyError: meadowBoyErrorUrl.src,
+  meadowBoySyncing: meadowBoySyncingUrl.src,
+  meadowGirlIdle: meadowGirlIdleUrl.src,
+  meadowGirlMove: meadowGirlMoveUrl.src,
+  meadowGirlResearching: meadowGirlResearchingUrl.src,
+  meadowGirlWriting: meadowGirlWritingUrl.src,
+  meadowGirlExecuting: meadowGirlExecutingUrl.src,
+  meadowGirlError: meadowGirlErrorUrl.src,
+  meadowGirlSyncing: meadowGirlSyncingUrl.src,
+  meadowGenderlessIdle: meadowGenderlessIdleUrl.src,
+  meadowGenderlessMove: meadowGenderlessMoveUrl.src,
+  meadowGenderlessResearching: meadowGenderlessResearchingUrl.src,
+  meadowGenderlessWriting: meadowGenderlessWritingUrl.src,
+  meadowGenderlessExecuting: meadowGenderlessExecutingUrl.src,
+  meadowGenderlessError: meadowGenderlessErrorUrl.src,
+  meadowGenderlessSyncing: meadowGenderlessSyncingUrl.src,
 };
 
 function createAgents(profiles: readonly AgentProfile[]): RuntimeAgent[] {

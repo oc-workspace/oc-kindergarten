@@ -15,7 +15,10 @@ import {
   nextAgentEnrollmentStatus,
 } from './agent-enrollment-contract';
 import type { AgentProfile } from './agent-registry-contract';
-import { AGENT_REGISTRY_SCHEMA_VERSION } from './agent-registry-contract';
+import {
+  AGENT_REGISTRY_SCHEMA_VERSION,
+  DEFAULT_AGENT_APPEARANCE_PRESET,
+} from './agent-registry-contract';
 import { getDatabaseClient } from './db/client';
 import {
   agentEnrollments,
@@ -81,6 +84,7 @@ type EnrollmentViewRow = {
   profileAgentId: string | null;
   profileDisplayName: string | null;
   profileCharacterVariant: string | null;
+  profileAppearancePreset: string | null;
   profileRole: string | null;
   profilePersonalitySummary: string | null;
   profileCapabilities: unknown;
@@ -105,6 +109,7 @@ const enrollmentViewSelection = {
   profileAgentId: agentProfiles.agentId,
   profileDisplayName: agentProfiles.displayName,
   profileCharacterVariant: agentProfiles.characterVariant,
+  profileAppearancePreset: agentProfiles.appearancePreset,
   profileRole: agentProfiles.role,
   profilePersonalitySummary: agentProfiles.personalitySummary,
   profileCapabilities: agentProfiles.capabilities,
@@ -124,6 +129,8 @@ function profileRowToPublicProfile(row: AgentProfileRow): AgentProfile {
     agentId: row.agentId,
     displayName: row.displayName,
     characterVariant: row.characterVariant as AgentProfile['characterVariant'],
+    appearancePreset:
+      row.appearancePreset as AgentProfile['appearancePreset'],
     registeredBy: row.registeredBy as AgentProfile['registeredBy'],
     ...(row.ownerId === null ? {} : { ownerId: row.ownerId }),
     ...(row.role === null ? {} : { role: row.role }),
@@ -201,6 +208,11 @@ function rowToEnrollmentView(
           row.profileCharacterVariant as NonNullable<
             AgentEnrollmentView['agent']
           >['characterVariant'],
+        appearancePreset:
+          (row.profileAppearancePreset ??
+            DEFAULT_AGENT_APPEARANCE_PRESET) as NonNullable<
+            AgentEnrollmentView['agent']
+          >['appearancePreset'],
         ...(row.profileRole === null ? {} : { role: row.profileRole }),
         ...(row.profilePersonalitySummary === null
           ? {}
@@ -592,6 +604,8 @@ export async function activateAgentEnrollment(
         ownerId: parentUserId,
         displayName: activation.displayName,
         characterVariant: activation.characterVariant,
+        appearancePreset:
+          activation.appearancePreset ?? DEFAULT_AGENT_APPEARANCE_PRESET,
         registeredBy: 'owner',
         role: activation.role,
         personalitySummary: activation.personalitySummary,
@@ -685,6 +699,8 @@ export async function updateAgentEnrollmentProfile(
       .set({
         displayName: profileInput.displayName,
         characterVariant: profileInput.characterVariant,
+        appearancePreset:
+          profileInput.appearancePreset ?? DEFAULT_AGENT_APPEARANCE_PRESET,
         role: profileInput.role ?? null,
         personalitySummary: profileInput.personalitySummary ?? null,
         capabilities: profileInput.capabilities ?? null,

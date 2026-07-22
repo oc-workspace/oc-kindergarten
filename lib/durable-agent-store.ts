@@ -2,6 +2,7 @@ import { and, asc, eq, gt, isNull, or, sql } from 'drizzle-orm';
 
 import {
   AGENT_REGISTRY_SCHEMA_VERSION,
+  DEFAULT_AGENT_APPEARANCE_PRESET,
 } from './agent-registry-contract';
 import type {
   AgentProfile,
@@ -43,6 +44,7 @@ function rowToProfile(row: AgentProfileRow): AgentProfile {
     agentId: row.agentId,
     displayName: row.displayName,
     characterVariant: row.characterVariant as AgentProfile['characterVariant'],
+    appearancePreset: row.appearancePreset as AgentProfile['appearancePreset'],
     registeredBy: row.registeredBy as AgentProfile['registeredBy'],
     ...(ownerId === undefined ? {} : { ownerId }),
     ...(row.role === null ? {} : { role: row.role }),
@@ -139,6 +141,8 @@ export async function upsertAgentProfile(
         source,
         displayName: input.displayName,
         characterVariant: input.characterVariant,
+        appearancePreset:
+          input.appearancePreset ?? DEFAULT_AGENT_APPEARANCE_PRESET,
         registeredBy: input.registeredBy,
         role: input.role,
         color: input.color,
@@ -153,6 +157,8 @@ export async function upsertAgentProfile(
           source,
           displayName: input.displayName,
           characterVariant: input.characterVariant,
+          appearancePreset:
+            input.appearancePreset ?? DEFAULT_AGENT_APPEARANCE_PRESET,
           registeredBy: input.registeredBy,
           role: input.role ?? null,
           color: input.color ?? null,
