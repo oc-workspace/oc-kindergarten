@@ -231,7 +231,16 @@ credential_storage_count="$(docker compose exec -T postgres psql \
   -v ON_ERROR_STOP=1 \
   -v native_agent="${test_native_agent}" \
   -v runtime_credential="${runtime_credential}" \
-  -At -c "SELECT count(*) FROM runtime_credentials c JOIN provider_agent_bindings b ON b.id = c.binding_id WHERE b.provider = 'openclaw' AND b.native_agent_id = :'native_agent' AND c.status = 'active' AND c.token_hash <> :'runtime_credential';")"
+  -At <<'SQL'
+SELECT count(*)
+FROM runtime_credentials c
+JOIN provider_agent_bindings b ON b.id = c.binding_id
+WHERE b.provider = 'openclaw'
+  AND b.native_agent_id = :'native_agent'
+  AND c.status = 'active'
+  AND c.token_hash <> :'runtime_credential';
+SQL
+)"
 test "${credential_storage_count}" = "1"
 
 reused_code_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
