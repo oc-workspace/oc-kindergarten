@@ -2,8 +2,8 @@
 
 ## Next: OpenClaw plugin beta.3 multi-Agent credentials
 
-Status: prepared, not started. Start only after the production fix for the
-stuck `syncing` state and missing reply bubble has passed final regression.
+Status: prepared, not started. The production `syncing`/reply-bubble fix passed
+final regression in implementation commit `32b3a3d`; beta.3 may start next.
 
 Goal: allow one OpenClaw Gateway to pair multiple Agents without one pairing
 overwriting another Agent's scoped credential.
