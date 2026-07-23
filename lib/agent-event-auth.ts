@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 
 import { getDatabaseClient } from './db/client';
 import {
@@ -54,7 +54,7 @@ export async function authorizeRuntimeCredentialRequest(
       and(
         eq(runtimeCredentials.tokenHash, tokenHash),
         eq(runtimeCredentials.status, 'active'),
-        eq(providerAgentBindings.status, 'active'),
+        ne(providerAgentBindings.status, 'revoked'),
         eq(providerAgentBindings.provider, scope.provider),
         eq(providerAgentBindings.nativeAgentId, scope.nativeAgentId),
       ),
