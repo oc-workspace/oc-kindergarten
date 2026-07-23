@@ -66,9 +66,9 @@ const VARIANT_LABELS: Record<CharacterVariant, string> = {
   genderless: '无性别孩子外观',
 };
 
-const PLUGIN_BETA_VERSION = 'v0.5.0-beta.1';
+const PLUGIN_BETA_VERSION = 'v0.5.0-beta.2';
 const PLUGIN_INSTALL_COMMAND = [
-  `openclaw plugins install 'git:ssh://git@github.com/oWinnieo/oc-kindergarten-openclaw-plugin.git#${PLUGIN_BETA_VERSION}' --force --pin`,
+  `openclaw plugins install 'git:ssh://git@github.com/oWinnieo/oc-kindergarten-openclaw-plugin.git#${PLUGIN_BETA_VERSION}' --force`,
   'openclaw plugins enable oc-kindergarten-bridge',
 ].join('\n');
 
