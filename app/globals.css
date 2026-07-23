@@ -149,7 +149,8 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.parentForm input {
+.parentForm input,
+.parentForm select {
   width: 100%;
   min-height: 44px;
   border: 1px solid rgba(23, 50, 74, 0.18);
@@ -160,7 +161,8 @@ button:focus-visible {
   font: inherit;
 }
 
-.parentForm input:focus {
+.parentForm input:focus,
+.parentForm select:focus {
   border-color: var(--blue);
   outline: 3px solid rgba(41, 125, 182, 0.14);
 }
@@ -767,7 +769,8 @@ button:focus-visible {
   font-weight: 800;
 }
 
-.familyParentEditForm input {
+.familyParentEditForm input,
+.familyParentEditForm select {
   width: 100%;
   min-height: 42px;
   border: 1px solid rgba(23, 50, 74, 0.18);
@@ -778,7 +781,8 @@ button:focus-visible {
   font: inherit;
 }
 
-.familyParentEditForm input:focus {
+.familyParentEditForm input:focus,
+.familyParentEditForm select:focus {
   border-color: var(--blue);
   outline: 3px solid rgba(41, 125, 182, 0.14);
 }

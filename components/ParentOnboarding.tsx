@@ -4,6 +4,12 @@ import { FormEvent, useEffect, useState } from 'react';
 
 import AgentEnrollmentPanel from './AgentEnrollmentPanel';
 import CasdoorSignInButton from './CasdoorSignInButton';
+import {
+  PARENT_LANGUAGE_OPTIONS,
+  PARENT_TIMEZONE_OPTIONS,
+  parentLanguageValue,
+  parentTimezoneValue,
+} from '@/lib/parent-profile-options';
 
 interface ParentProfile {
   id: string;
@@ -56,8 +62,12 @@ export default function ParentOnboarding() {
       setPageState({ kind: 'ready', parent: body.parent });
       setDisplayName(body.parent.displayName);
       setAvatarUrl(body.parent.avatarUrl ?? '');
-      setTimezone(body.parent.timezone ?? browserTimezone());
-      setLanguage(body.parent.language ?? navigator.language ?? 'zh-CN');
+      setTimezone(
+        parentTimezoneValue(body.parent.timezone ?? browserTimezone()),
+      );
+      setLanguage(
+        parentLanguageValue(body.parent.language ?? navigator.language) || 'zh-CN',
+      );
     } catch (error) {
       setPageState({
         kind: 'error',
@@ -175,21 +185,31 @@ export default function ParentOnboarding() {
         </label>
         <label>
           <span>时区（可选）</span>
-          <input
-            maxLength={64}
-            placeholder="Asia/Singapore"
+          <select
             value={timezone}
             onChange={(event) => setTimezone(event.target.value)}
-          />
+          >
+            <option value="">请选择时区</option>
+            {PARENT_TIMEZONE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <label>
           <span>语言（可选）</span>
-          <input
-            maxLength={35}
-            placeholder="zh-CN"
+          <select
             value={language}
             onChange={(event) => setLanguage(event.target.value)}
-          />
+          >
+            <option value="">请选择语言</option>
+            {PARENT_LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="parentFormActions parentFullField">
           <button className="parentPrimaryAction" type="submit" disabled={saving}>

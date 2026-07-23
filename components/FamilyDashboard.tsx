@@ -13,6 +13,14 @@ import {
   agentActionNotice,
 } from '@/lib/agent-action-notice';
 import type { AgentAppearancePreset } from '@/lib/agent-registry-contract';
+import {
+  PARENT_LANGUAGE_OPTIONS,
+  PARENT_TIMEZONE_OPTIONS,
+  parentLanguageLabel,
+  parentLanguageValue,
+  parentTimezoneLabel,
+  parentTimezoneValue,
+} from '@/lib/parent-profile-options';
 import AgentAppearancePicker, {
   APPEARANCE_PRESET_LABELS,
 } from './AgentAppearancePicker';
@@ -135,8 +143,8 @@ function parentProfileDraftFor(parent: ParentProfile): ParentProfileDraft {
   return {
     displayName: parent.displayName,
     avatarUrl: parent.avatarUrl ?? '',
-    timezone: parent.timezone ?? '',
-    language: parent.language ?? '',
+    timezone: parentTimezoneValue(parent.timezone),
+    language: parentLanguageValue(parent.language),
   };
 }
 
@@ -536,11 +544,11 @@ export default function FamilyDashboard() {
             </div>
             <div>
               <dt>时区</dt>
-              <dd>{state.parent.timezone ?? '未设置'}</dd>
+              <dd>{parentTimezoneLabel(state.parent.timezone)}</dd>
             </div>
             <div>
               <dt>语言</dt>
-              <dd>{state.parent.language ?? '未设置'}</dd>
+              <dd>{parentLanguageLabel(state.parent.language)}</dd>
             </div>
           </dl>
 
@@ -581,25 +589,35 @@ export default function FamilyDashboard() {
               </label>
               <label>
                 <span>时区（可选）</span>
-                <input
-                  maxLength={64}
-                  placeholder="Asia/Singapore"
+                <select
                   value={parentProfileDraft.timezone}
                   onChange={(event) =>
                     updateParentProfileDraft({ timezone: event.target.value })
                   }
-                />
+                >
+                  <option value="">请选择时区</option>
+                  {PARENT_TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 <span>语言（可选）</span>
-                <input
-                  maxLength={35}
-                  placeholder="zh-CN"
+                <select
                   value={parentProfileDraft.language}
                   onChange={(event) =>
                     updateParentProfileDraft({ language: event.target.value })
                   }
-                />
+                >
+                  <option value="">请选择语言</option>
+                  {PARENT_LANGUAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <div className="familyParentEditActions familyParentEditWideField">
                 <button
