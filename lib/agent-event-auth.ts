@@ -54,6 +54,7 @@ export async function authorizeRuntimeCredentialRequest(
       and(
         eq(runtimeCredentials.tokenHash, tokenHash),
         eq(runtimeCredentials.status, 'active'),
+        eq(providerAgentBindings.status, 'active'),
         eq(providerAgentBindings.provider, scope.provider),
         eq(providerAgentBindings.nativeAgentId, scope.nativeAgentId),
       ),

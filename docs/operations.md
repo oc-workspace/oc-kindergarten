@@ -1,5 +1,58 @@
 # OC Kindergarten Operations
 
+## Scoped OpenClaw credential rollout
+
+内测插件从 `v0.5.0-beta.1` 起不再接收服务器全局 Agent event token。每次成功使用一次性
+配对码时，服务端为对应 `provider + nativeAgentId` binding 签发一个
+`ockg_rt_...` scoped credential；数据库只保存带 domain separation 的 SHA-256 hash。再次为
+同一 binding 配对会撤销旧 credential 并签发新值。
+
+本次发布包含 migration `drizzle/0007_medical_mockingbird.sql`，新增
+`runtime_credentials` 表。部署前必须备份数据库、mode `0600` 的 `.env`，并记录当前
+Web/migrator image tag 和 Git commit：
+
+```bash
+./scripts/backup-database.sh
+docker compose build oc-kindergarten migrate
+docker compose run --rm migrate
+docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
+./scripts/verify-enrollment-api.sh
+```
+
+反向代理必须覆盖客户端提交的 `X-Real-IP`；若只提供 `X-Forwarded-For`，必须覆盖而不是追加
+不可信输入，并禁止绕过代理直接访问 Web 容器。应用优先使用 `X-Real-IP`，配对接口以代理提供的
+客户端地址执行五分钟窗口限流。不得在日志、命令回显、截图、工单或数据库中记录明文
+`ockg_rt_...` 值。
+
+自动验收除原有 enrollment、profile、activity、archive/restore 和 Registry SSE 链路外，还
+必须确认：
+
+- 配对响应只返回一次 `Bearer` credential，格式为 `ockg_rt_` 加 43 个 URL-safe 字符；
+- 数据库保存的只有 token hash，明文 token 不得与 `runtime_credentials.token_hash` 相同；
+- 配对码不可重复使用；同一 scoped credential 不能访问其他 native Agent；
+- `/api/runtime/agents/discover` 和 bridge v2 `/api/openclaw/events` 接受匹配 identity 的
+  scoped credential，旧的全局 token 仅保留给 legacy/internal producer；
+- binding 归档为 `revoked` 后 scoped credential 在认证层返回 `401`；原 owner 恢复后 binding
+  回到 active，credential 可重新认证，但 enrollment 在显式 resume 前仍保持 suspended；
+- 验收退出后 verification parent、enrollment、profile、binding、runtime credential、event、
+  cursor、latest state、outbox 和 command 全部清理。
+
+自动化通过后，使用可丢弃的真实 Casdoor 主人和专用 OpenClaw Agent 做一次 beta 验收：
+
+1. 在 `/onboarding/parent` 新建入园申请并生成一次性配对码；
+2. 在 OpenClaw 主机安装页面指定的固定 beta tag，执行
+   `openclaw kindergarten pair <一次性码> --agent <agent-id>`；
+3. 回到网页确认草稿、选择角色与外观并激活，随后触发一条真实 OpenClaw 消息或任务；
+4. 确认教室出现该 Agent，家庭活动时间线显示安全摘要，服务器没有输出明文 credential；
+5. 再次使用原配对码必须失败；用该 credential 冒充另一 native Agent 必须返回 `401`；
+6. 归档后真实 OpenClaw event 必须返回 `401` 且教室角色消失；restore 后先保持 suspended，
+   显式 resume 后下一条真实 event 才重新入场；
+7. 删除专用 OpenClaw Agent／测试配置，并确认数据库与 pending outbox 没有 verification 残留。
+
+回滚应用时保留 `runtime_credentials` 表，不恢复或删除 PostgreSQL volume。旧应用会忽略新增表，
+但不支持 beta scoped credential；回滚期间应暂停 beta 配对和事件接入，不得把全局 Agent event
+token 分发给内测用户。恢复本版本后既有未撤销 credential 可继续使用。
+
 ## Family activity timeline rollout
 
 家庭活动时间线复用现有 `agent_event_log` 和 `agent_event_log_agent_created_idx`，不新增数据库

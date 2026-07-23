@@ -541,6 +541,13 @@ archive_count="$(docker compose exec -T postgres psql \
   -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.archived_at IS NOT NULL AND e.status = 'archived' AND b.status = 'revoked';")"
 test "${archive_count}" = "1"
 
+archived_scoped_credential_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${runtime_credential}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "${scoped_discovery_json}" \
+  "${PUBLIC_ORIGIN}/api/runtime/agents/discover")"
+test "${archived_scoped_credential_status}" = "401"
+
 archived_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
   jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
 test "${archived_registry_count}" = "0"
@@ -605,6 +612,13 @@ restored_count="$(docker compose exec -T postgres psql \
   -At -c "SELECT count(*) FROM agent_profiles p JOIN agent_enrollments e ON e.id = p.enrollment_id JOIN provider_agent_bindings b ON b.agent_id = p.agent_id WHERE p.agent_id = '${agent_id}' AND p.archived_at IS NULL AND e.status = 'suspended' AND b.status = 'active';")"
 test "${restored_count}" = "1"
 
+restored_scoped_credential_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${runtime_credential}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "${scoped_discovery_json}" \
+  "${PUBLIC_ORIGIN}/api/runtime/agents/discover")"
+test "${restored_scoped_credential_status}" = "202"
+
 restored_registry_count="$(curl -fsS "${PUBLIC_ORIGIN}/api/agents" | \
   jq --arg agent_id "${agent_id}" '[.profiles[] | select(.agentId == $agent_id)] | length')"
 test "${restored_registry_count}" = "0"
@@ -647,4 +661,5 @@ printf 'profile_revision_registry_outbox_and_dual_sse=passed\n'
 printf 'casdoor_direct_signin_family_callback=passed\n'
 printf 'owner_pending_enrollment_cancellation=passed\n'
 printf 'owner_archive_restore_and_identity_guard=passed\n'
+printf 'scoped_credential_archive_restore_guard=passed\n'
 printf 'owner_activity_timeline_privacy_and_pagination=passed\n'

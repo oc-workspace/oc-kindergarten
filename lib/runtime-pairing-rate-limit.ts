@@ -15,11 +15,12 @@ export type RuntimePairingRateLimit = {
 };
 
 export function runtimePairingClientKey(request: Request): string {
+  const realIp = request.headers.get('x-real-ip')?.trim();
   const forwardedFor = request.headers.get('x-forwarded-for');
   const firstForwardedAddress = forwardedFor?.split(',')[0]?.trim();
   return (
+    realIp ||
     firstForwardedAddress ||
-    request.headers.get('x-real-ip')?.trim() ||
     'unknown-client'
   );
 }

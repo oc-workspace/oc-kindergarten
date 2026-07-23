@@ -23,6 +23,17 @@ assert.equal(
 assert.equal(
   runtimePairingClientKey(
     new Request('https://example.test', {
+      headers: {
+        'x-real-ip': '198.51.100.8',
+        'x-forwarded-for': '203.0.113.5, 10.0.0.1',
+      },
+    }),
+  ),
+  '198.51.100.8',
+);
+assert.equal(
+  runtimePairingClientKey(
+    new Request('https://example.test', {
       headers: { 'x-forwarded-for': '203.0.113.5, 10.0.0.1' },
     }),
   ),
