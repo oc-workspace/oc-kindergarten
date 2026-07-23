@@ -228,7 +228,9 @@ export default function AgentEnrollmentPanel() {
   const copyPluginInstallCommand = async () => {
     try {
       await navigator.clipboard.writeText(PLUGIN_INSTALL_COMMAND);
-      setNotice('插件安装命令已复制。每台 OpenClaw 主机只需安装一次。');
+      setNotice(
+        '插件安装命令已复制。beta.2 每个 OpenClaw Gateway 暂只配对一个 scoped Agent。',
+      );
     } catch {
       setNotice('浏览器无法复制，请手动复制插件安装命令。');
     }
@@ -323,8 +325,8 @@ export default function AgentEnrollmentPanel() {
           <h3>先在 OpenClaw 主机安装入园插件</h3>
         </div>
         <p>
-          需要 OpenClaw 2026.7.1-2 或更高版本，以及内测仓库读取权限。同一台主机只安装一次；
-          以后添加更多 Agent 直接生成新的配对码。
+          需要 OpenClaw 2026.7.1-2 或更高版本，以及内测仓库读取权限。同一台主机无需重复安装；
+          但 beta.2 每个 Gateway 暂只支持一个 scoped Agent，请勿继续配对第二个 Agent。
         </p>
         <code className="agentPairingCommand">{PLUGIN_INSTALL_COMMAND}</code>
         <div className="agentPairingActions">

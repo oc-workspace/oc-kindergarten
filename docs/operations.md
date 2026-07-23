@@ -49,9 +49,39 @@ docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
    显式 resume 后下一条真实 event 才重新入场；
 7. 删除专用 OpenClaw Agent／测试配置，并确认数据库与 pending outbox 没有 verification 残留。
 
+`v0.5.0-beta.2` 的插件配置只有一个 `token` 字段；同一 Gateway 再次配对会覆盖前一个 Agent 的
+scoped credential。修复为按 binding 保存多份 credential 前，每个 Gateway 只允许配对一个
+scoped Agent，不得用“安装一次后继续配对”的方式做多 Agent 灰度。已有多 Agent Gateway 应继续
+使用 legacy/internal 全局 token，且不得将该全局 token 分发给外部内测用户。
+
 回滚应用时保留 `runtime_credentials` 表，不恢复或删除 PostgreSQL volume。旧应用会忽略新增表，
 但不支持 beta scoped credential；回滚期间应暂停 beta 配对和事件接入，不得把全局 Agent event
 token 分发给内测用户。恢复本版本后既有未撤销 credential 可继续使用。
+
+### Acceptance record: 2026-07-23 (conditional beta)
+
+- 生产应用部署到 `b5fd442`，Web image digest 为
+  `sha256:511476abf1088b868fdd79bc02bc06408b4159bbe0518ee5fc4f1baa6b1e9408`；
+  migration `0007` 已存在且无需重跑。发布回滚点为 `20260723T082318Z`，PostgreSQL dump 位于
+  `/opt/persist/_backups/oc-kindergarten/oc-kindergarten-20260723T082318Z.dump`，`.env` 备份与
+  rollback image 使用同一时间戳，备份文件均为 mode `0600`；
+- 生产 `scripts/verify-enrollment-api.sh` 全量通过，包括 scoped identity 隔离、一次性配对码、
+  archive `401`、restore 后 credential 重新认证，以及 verification 数据完整清理。根页面与
+  Registry API 均返回 `200`，Web/PostgreSQL restart count 均为 0；
+- `pi-home` 从 OpenClaw `2026.3.13` 升级到 `2026.7.1-2`、Node.js 升级到 `22.22.3`，安装
+  `oc-kindergarten-bridge@0.5.0-beta.2`。升级前私有备份为
+  `/home/winnie/backups/openclaw-upgrades/openclaw-pre-20260723T083545Z.tgz`，SHA-256 为
+  `9beac9021eea0a8ad8fc601658db5860cf8e4733eba7db65bda015a4c5f9ed1b`；
+- 使用专用 Agent `kg-beta-acceptance-20260723` 完成真实配对、主人确认、入园和 OpenClaw 任务。
+  家庭时间线显示 1 次“进入教室”和 3 次“开始交流活动”；归档后的插件请求返回 `401`，restore
+  到 suspended 后 scoped discovery 返回 `202`，resume 后返回 `200`；
+- 验收退出后已删除专用 OpenClaw Agent、workspace、临时插件／配置目录，以及 enrollment、
+  profile、binding、runtime credential、event、cursor 和 outbox。数据库回到
+  `1 parent / 3 enrollments / 6 bindings / 0 runtime credentials / 0 pending outbox`；
+- 此次结论为“服务端 scoped credential 链路通过，beta.2 多 Agent Gateway 灰度不通过”。
+  `pi-home` 已恢复旧全局 token 以维持现有 `main`／`encourager`，main discovery 返回 `200`；
+  Gateway RPC 正常、restart count 为 0。下一版插件必须改为按 binding/Agent 存储 credential，
+  再重复多 Agent 配对、重启持久化、轮换和撤销验收。
 
 ## Family activity timeline rollout
 
