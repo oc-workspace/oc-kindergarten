@@ -1,5 +1,13 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+report_failure() {
+  local status="$?"
+  printf 'enrollment_api_verification_failed_line=%s status=%s\n' \
+    "${BASH_LINENO[0]:-unknown}" "${status}" >&2
+  return "${status}"
+}
+trap report_failure ERR
 
 PROJECT_DIR="${1:-/opt/docker/oc-projects/oc-kindergarten}"
 PUBLIC_ORIGIN="${PUBLIC_ORIGIN:-https://kindergarten-dev.rococo.dev}"
