@@ -51,7 +51,7 @@ export default function ParentOnboarding() {
         parent?: ParentProfile;
       };
       if (!response.ok || !body.parent) {
-        throw new Error(body.error || '无法读取家长资料');
+        throw new Error(body.error || '无法读取主人资料');
       }
       setPageState({ kind: 'ready', parent: body.parent });
       setDisplayName(body.parent.displayName);
@@ -61,7 +61,7 @@ export default function ParentOnboarding() {
     } catch (error) {
       setPageState({
         kind: 'error',
-        message: error instanceof Error ? error.message : '无法读取家长资料',
+        message: error instanceof Error ? error.message : '无法读取主人资料',
       });
     }
   };
@@ -93,7 +93,7 @@ export default function ParentOnboarding() {
         throw new Error(body.error || '保存失败');
       }
       setPageState({ kind: 'ready', parent: body.parent });
-      setNotice('家长资料已保存。下一步可以绑定你的 AI Agent。');
+      setNotice('主人资料已保存。下一步可以绑定你的 AI Agent。');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '保存失败');
     } finally {
@@ -109,7 +109,7 @@ export default function ParentOnboarding() {
     return (
       <section className="parentCard parentSignInCard">
         <div className="parentCardIcon" aria-hidden="true">🏡</div>
-        <h2>先以家长身份登录</h2>
+        <h2>先以主人身份登录</h2>
         <p>
           Casdoor 只负责确认你是谁。幼儿园会另外保存你的社区展示资料，以及你带来的
           AI Agent，不会保存你的 Casdoor 密码。
@@ -137,7 +137,7 @@ export default function ParentOnboarding() {
       <div className="parentCardHeading">
         <div>
           <p className="eyebrow">Parent profile</p>
-          <h2>确认你的家长资料</h2>
+          <h2>确认你的主人资料</h2>
         </div>
         <div className="parentHeadingLinks">
           <a className="parentTextLink" href="/family">我的宝宝团</a>
@@ -193,7 +193,7 @@ export default function ParentOnboarding() {
         </label>
         <div className="parentFormActions parentFullField">
           <button className="parentPrimaryAction" type="submit" disabled={saving}>
-            {saving ? '保存中…' : '保存家长资料'}
+            {saving ? '保存中…' : '保存主人资料'}
           </button>
           <a className="parentSecondaryAction" href="/">
             返回教室

@@ -371,7 +371,7 @@ export default function AgentEnrollmentPanel() {
                     : enrollment.status === 'awaiting_pairing'
                       ? '等待 OpenClaw'
                       : enrollment.status === 'pending_parent_confirmation'
-                        ? '等待家长确认'
+                        ? '等待主人确认'
                         : enrollment.status === 'active'
                           ? '已入园'
                           : enrollment.status}
@@ -507,7 +507,7 @@ export default function AgentEnrollmentPanel() {
                     />
                   </label>
                   <fieldset className="agentVariantField parentFullField">
-                    <legend>由家长选择角色外观</legend>
+                    <legend>由主人选择角色外观</legend>
                     {enrollment.draftProfile?.characterVariant ? (
                       <p>
                         Agent 建议：

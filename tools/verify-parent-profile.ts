@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { parseParentProfilePatch } from '../lib/parent-profile-contract';
 
 const valid = parseParentProfilePatch({
-  displayName: '  小王家长  ',
+  displayName: '  小王主人  ',
   avatarUrl: 'https://example.com/avatar.png',
   timezone: 'Asia/Singapore',
   language: 'zh-CN',
 });
 assert.equal(valid.ok, true);
 if (valid.ok) {
-  assert.equal(valid.patch.displayName, '小王家长');
+  assert.equal(valid.patch.displayName, '小王主人');
   assert.equal(valid.patch.timezone, 'Asia/Singapore');
 }
 
