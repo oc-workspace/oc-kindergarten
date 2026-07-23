@@ -12,6 +12,7 @@ import {
   type AgentRuntimeEvent,
 } from '../lib/agent-event-contract';
 import { agentIncomingMessageNotice } from '../lib/agent-message-presentation';
+import { sanitizeOpenClawDisplayText } from '../lib/openclaw-message-display';
 import { StarOfficeFallbackAdapter } from '../lib/star-office-fallback-adapter';
 
 type Fixture = Record<string, unknown> & { expected: string | string[] };
@@ -104,6 +105,75 @@ assert.equal(
   agentIncomingMessageNotice('Bonnie', 'Bonnie你在干嘛呀'),
   'Bonnie 收到主人的消息“Bonnie你在干嘛呀”',
 );
+assert.equal(
+  agentIncomingMessageNotice('Bonnie', 'Bonnie,在线么', {
+    channel: 'telegram',
+    conversationType: 'direct',
+    senderRole: 'owner',
+    senderName: '@owner',
+  }),
+  'Bonnie 收到主人的消息“Bonnie,在线么”',
+);
+assert.equal(
+  agentIncomingMessageNotice('Bonnie', '@Bonnie,在线么', {
+    channel: 'telegram',
+    conversationType: 'group',
+    senderRole: 'owner',
+    senderName: '@owner',
+  }),
+  'Bonnie 收到群聊里主人的消息“@Bonnie,在线么”',
+);
+assert.equal(
+  agentIncomingMessageNotice('Bonnie', '@Bonnie,在线么', {
+    channel: 'telegram',
+    conversationType: 'group',
+    senderRole: 'participant',
+    senderName: '@Alice',
+  }),
+  'Bonnie 收到群聊里@Alice的消息“@Bonnie,在线么”',
+);
+assert.equal(
+  sanitizeOpenClawDisplayText(
+    '[[reply_to_current]] [[audio_as_voice]] 收到了 [[example]]',
+  ),
+  '收到了 [[example]]',
+);
+assert.equal(
+  sanitizeOpenClawDisplayText('[[reply_to: 12345]]指定消息回复'),
+  '指定消息回复',
+);
+const messageReceived = nativeAdapter.adapt({
+  bridgeVersion: 1,
+  kind: 'openclaw.hook',
+  bridgeEventId: 'openclaw:fixture:message-origin-check',
+  hook: 'message_received',
+  classroomAgentId: 'agent-scout',
+  observedAt: '2026-07-17T12:00:10.000Z',
+  data: {
+    messageContent: '@Bonnie,在线么',
+    messageOrigin: {
+      channel: 'telegram',
+      conversationType: 'group',
+      senderRole: 'participant',
+      senderName: '@Alice',
+    },
+  },
+});
+assert.equal(messageReceived.ok, true);
+if (messageReceived.ok) {
+  const incoming = messageReceived.events.find(
+    (event) => event.type === 'agent.message',
+  );
+  assert.equal(incoming?.type, 'agent.message');
+  if (incoming?.type === 'agent.message') {
+    assert.deepEqual(incoming.origin, {
+      channel: 'telegram',
+      conversationType: 'group',
+      senderRole: 'participant',
+      senderName: '@Alice',
+    });
+  }
+}
 assert.equal(
   parseAgentRuntimeEvent({
     schemaVersion: 1,

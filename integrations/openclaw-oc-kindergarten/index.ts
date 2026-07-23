@@ -22,22 +22,29 @@ type HookContext = {
 
 const DEFAULT_ENDPOINT = "http://127.0.0.1:3000/api/openclaw/events";
 const DEFAULT_AGENT_ID = "agent-scout";
-const BRIDGE_ADAPTER_VERSION = "2.1.0";
-const PLUGIN_VERSION = "0.4.0";
+const BRIDGE_ADAPTER_VERSION = "2.2.0";
+const PLUGIN_VERSION = "0.5.0";
+const AUDIO_TAG_RE = /\[\[\s*audio_as_voice\s*\]\]/gi;
+const REPLY_TAG_RE =
+  /\[\[\s*(?:reply_to_current|reply_to\s*:\s*([^\]\n]+))\s*\]\]/gi;
+
+function sanitizeOpenClawDisplayText(value: string): string {
+  return value
+    .replace(AUDIO_TAG_RE, " ")
+    .replace(REPLY_TAG_RE, " ")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
 
 function optionalMessageContent(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = sanitizeOpenClawDisplayText(value)
+    .replace(/\s+/g, " ")
+    .trim();
   if (!normalized) return undefined;
   return Array.from(normalized).slice(0, 280).join("");
-}
-
-function isChannelMessageRun(context: HookContext): boolean {
-  if (context.trigger === "user") return true;
-  if (context.messageProvider || context.channelId) return true;
-  return /(?:^|:)(?:telegram|discord|slack|whatsapp|signal|imessage|line|matrix|webchat)(?:$|:)/i.test(
-    context.sessionKey ?? "",
-  );
 }
 
 function messageText(value: unknown): string | undefined {
@@ -430,13 +437,11 @@ const plugin = {
     // OpenClaw 2026.3.x calls this hook before_agent_start. The bridge keeps
     // the provider-neutral v1 wire name before_agent_run for compatibility
     // with the server adapter and newer Gateway releases.
-    api.on("before_agent_start", (event, context) => {
-      const messageContent = isChannelMessageRun(context)
-        ? optionalMessageContent(event.prompt)
-        : undefined;
-      void emit("before_agent_run", context, {
-        ...(messageContent ? { messageContent } : {}),
-      });
+    api.on("before_agent_start", (_event, context) => {
+      // The prompt may contain router instructions, role descriptions, and
+      // system text. Raw channel messages arrive through a dedicated
+      // message_received bridge event instead of being inferred from prompt.
+      void emit("before_agent_run", context, {});
     });
 
     api.on("before_tool_call", (event, context) => {

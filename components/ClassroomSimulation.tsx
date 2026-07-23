@@ -1320,7 +1320,11 @@ export default function ClassroomSimulation({
         const displayName = profilesRef.current.get(event.agentId)?.displayName;
         if (displayName && event.direction === 'incoming') {
           setClassroomNotice(
-            agentIncomingMessageNotice(displayName, event.content),
+            agentIncomingMessageNotice(
+              displayName,
+              event.content,
+              event.origin,
+            ),
           );
         } else if (displayName && event.direction === 'outgoing') {
           showAgentSpeech(event.agentId, {

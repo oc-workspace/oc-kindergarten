@@ -1,8 +1,11 @@
 # OC Kindergarten OpenClaw Bridge
 
 This local-development OpenClaw plugin observes typed runtime hooks and posts a
-small, secret-free bridge payload to OC Kindergarten. It never sends tool
-parameters, message bodies, complete prompts, or session history.
+small bridge payload to OC Kindergarten. It never sends tool parameters,
+complete prompts, or session history. For the classroom status and speech
+bubble, it sends only the bounded final assistant message; a Telegram router
+may separately send the bounded original user message plus display-only sender
+context through the `message_received` bridge hook.
 
 Install it from the OpenClaw host:
 
@@ -31,8 +34,10 @@ Configure `plugins.entries.oc-kindergarten-bridge.config` in `openclaw.json`:
 OpenClaw 原生 Agent，避免把多个身份合并到同一个教室角色；只有旧系统兼容时才设置
 `unmappedAgentPolicy: "default"`。
 
-桥接 payload 只包含 hook、Agent/会话标识、工具名、耗时、成功与否等运行元数据。
-prompt、消息正文、工具参数、原始错误文本和会话历史不会离开 Gateway。
+普通生命周期 payload 只包含 hook、Agent/会话标识、工具名、耗时、成功与否等运行元数据。
+Bridge 不会把 `before_agent_start` 的完整 prompt 当作用户消息；消息正文只允许通过明确的
+`message_received` 事件发送，并限制为 280 个字符。工具参数、原始错误文本和会话历史不会
+离开 Gateway。
 
 Set the same token as `OC_KINDERGARTEN_AGENT_EVENT_TOKEN` for the Next.js
 server, restart both processes, then verify the live plugin registration:
