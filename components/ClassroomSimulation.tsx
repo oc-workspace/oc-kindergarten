@@ -94,6 +94,7 @@ import {
   parseAgentRuntimeEvent,
 } from '@/lib/agent-event-contract';
 import { agentIncomingMessageNotice } from '@/lib/agent-message-presentation';
+import { resolveAgentStateLiveness } from '@/lib/agent-state-liveness';
 import {
   AgentAppearancePreset,
   AgentProfile,
@@ -778,6 +779,8 @@ export default function ClassroomSimulation({
   const doorRef = useRef<DoorState>({ phase: 'closed', phaseStartedAt: 0 });
   const eventTimersRef = useRef<number[]>([]);
   const speechTimersRef = useRef(new Map<string, number>());
+  const stateExpiryTimersRef = useRef(new Map<string, number>());
+  const latestStateEventIdsRef = useRef(new Map<string, string>());
   const requestedTestAgentIdsRef = useRef(new Set<string>());
   const waitQueuesRef = useRef(new Map<AgentTaskState, string[]>());
   const drainingQueuesRef = useRef(false);
@@ -863,6 +866,9 @@ export default function ClassroomSimulation({
     () => () => {
       speechTimersRef.current.forEach((timer) => window.clearTimeout(timer));
       speechTimersRef.current.clear();
+      stateExpiryTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      stateExpiryTimersRef.current.clear();
+      latestStateEventIdsRef.current.clear();
     },
     [],
   );
@@ -875,6 +881,10 @@ export default function ClassroomSimulation({
     for (const agentId of Array.from(existingById.keys())) {
       if (!registeredIds.has(agentId)) {
         removeAgentFromActivityWaitQueues(waitQueuesRef.current, agentId);
+        const timer = stateExpiryTimersRef.current.get(agentId);
+        if (timer !== undefined) window.clearTimeout(timer);
+        stateExpiryTimersRef.current.delete(agentId);
+        latestStateEventIdsRef.current.delete(agentId);
       }
     }
     profilesRef.current = new Map(
@@ -1272,19 +1282,56 @@ export default function ClassroomSimulation({
         } else {
           externalPresenceAgentsRef.current.delete(event.agentId);
           externalStateAgentsRef.current.delete(event.agentId);
+          const timer = stateExpiryTimersRef.current.get(event.agentId);
+          if (timer !== undefined) window.clearTimeout(timer);
+          stateExpiryTimersRef.current.delete(event.agentId);
+          latestStateEventIdsRef.current.delete(event.agentId);
         }
       }
 
       let applied: boolean;
       if (event.type === 'agent.state') {
+        const currentTimer = stateExpiryTimersRef.current.get(event.agentId);
+        if (currentTimer !== undefined) window.clearTimeout(currentTimer);
+        stateExpiryTimersRef.current.delete(event.agentId);
+        latestStateEventIdsRef.current.set(event.agentId, event.eventId);
+
+        const liveness = resolveAgentStateLiveness(event);
+        if (liveness.expiresInMs !== null && liveness.expiresInMs > 0) {
+          const timer = window.setTimeout(() => {
+            if (
+              latestStateEventIdsRef.current.get(event.agentId) !== event.eventId
+            ) {
+              return;
+            }
+            stateExpiryTimersRef.current.delete(event.agentId);
+            const agent = agentsRef.current.find(
+              (candidate) => candidate.id === event.agentId,
+            );
+            if (agent?.visible) {
+              applyAgentStateRef.current(event.agentId, 'idle');
+            } else {
+              pendingStateRef.current.set(event.agentId, {
+                ...event,
+                state: 'idle',
+                taskSummary: '活动状态超时，已回到待机',
+              });
+            }
+          }, liveness.expiresInMs);
+          stateExpiryTimersRef.current.set(event.agentId, timer);
+        }
+
         const agent = agentsRef.current.find(
           (candidate) => candidate.id === event.agentId,
         );
         if (agent && !agent.visible) {
-          pendingStateRef.current.set(event.agentId, event);
+          pendingStateRef.current.set(event.agentId, {
+            ...event,
+            state: liveness.state,
+          });
           applied = true;
         } else {
-          applied = applyAgentState(event.agentId, event.state);
+          applied = applyAgentState(event.agentId, liveness.state);
         }
       } else if (event.type === 'agent.presence') {
         applied = applyPresenceEvent(event);

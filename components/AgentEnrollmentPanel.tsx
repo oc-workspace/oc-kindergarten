@@ -70,6 +70,9 @@ const PLUGIN_BETA_VERSION = 'v0.5.0-beta.2';
 const PLUGIN_INSTALL_COMMAND = [
   `openclaw plugins install 'git:ssh://git@github.com/oWinnieo/oc-kindergarten-openclaw-plugin.git#${PLUGIN_BETA_VERSION}' --force`,
   'openclaw plugins enable oc-kindergarten-bridge',
+  `openclaw config set 'plugins.entries["oc-kindergarten-bridge"].hooks.allowConversationAccess' true --strict-json`,
+  `openclaw config set 'plugins.entries["oc-kindergarten-bridge"].config.shareAssistantMessages' true --strict-json`,
+  'openclaw gateway restart',
 ].join('\n');
 
 function draftForActivation(enrollment: AgentEnrollment): ActivationDraft {
@@ -229,7 +232,7 @@ export default function AgentEnrollmentPanel() {
     try {
       await navigator.clipboard.writeText(PLUGIN_INSTALL_COMMAND);
       setNotice(
-        '插件安装命令已复制。beta.2 每个 OpenClaw Gateway 暂只配对一个 scoped Agent。',
+        '插件安装命令已复制，包含回复气泡所需的会话访问开关。beta.2 每个 Gateway 暂只配对一个 scoped Agent。',
       );
     } catch {
       setNotice('浏览器无法复制，请手动复制插件安装命令。');
@@ -326,7 +329,8 @@ export default function AgentEnrollmentPanel() {
         </div>
         <p>
           需要 OpenClaw 2026.7.1-2 或更高版本，以及内测仓库读取权限。同一台主机无需重复安装；
-          但 beta.2 每个 Gateway 暂只支持一个 scoped Agent，请勿继续配对第二个 Agent。
+          命令会允许插件读取并发送最多 280 字的清洗后回复摘要，用于教室气泡。beta.2 每个
+          Gateway 暂只支持一个 scoped Agent，请勿继续配对第二个 Agent。
         </p>
         <code className="agentPairingCommand">{PLUGIN_INSTALL_COMMAND}</code>
         <div className="agentPairingActions">

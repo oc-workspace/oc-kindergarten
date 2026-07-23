@@ -50,6 +50,7 @@ yarn db:migrate
 
 归档恢复部署、回滚以及管理员、Agent event、NextAuth 和 Casdoor secret 轮换步骤见
 [`docs/operations.md`](docs/operations.md)。
+后续开发顺序与发布门槛见 [`docs/development-plan.md`](docs/development-plan.md)。
 
 OpenClaw 生产接入推荐使用 bridge v2：插件配置 `identityMode: "server"`，不配置静态
 `agentMap`。runtime 可调用 `POST /api/runtime/agents/discover` 提交非敏感身份草稿，也可
@@ -61,8 +62,8 @@ OpenClaw 插件的正式源码已拆分到 private dev 仓库
 `oc-workspace/oc-kindergarten-openclaw-plugin`，内测发布仓库为
 `oWinnieo/oc-kindergarten-openclaw-plugin`。`v0.5.0-beta.1` 起，插件通过一次性配对码
 取得单 binding scoped credential，并使用 OpenClaw 官方 config mutation API 自动保存配置；
-不再向内测用户分发服务器全局 Agent event token。插件安装一次后，同一主机添加其他 Agent
-只需再次执行网页生成的 `openclaw kindergarten pair` 命令。
+不再向内测用户分发服务器全局 Agent event token。`v0.5.0-beta.2` 每个 Gateway 暂只允许配对
+一个 scoped Agent；多 Agent credential store 列入 beta.3 开发计划。
 
 主人身份由独立 Casdoor organization `OCKindergarten` 和 Application
 `oc-kindergarten` 提供，不复用或迁移 `RococoOrg` 用户；使用 `issuer + sub` 关联本地

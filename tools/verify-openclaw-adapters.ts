@@ -12,6 +12,10 @@ import {
   type AgentRuntimeEvent,
 } from '../lib/agent-event-contract';
 import { agentIncomingMessageNotice } from '../lib/agent-message-presentation';
+import {
+  resolveAgentStateLiveness,
+  TRANSIENT_AGENT_STATE_MAX_AGE_MS,
+} from '../lib/agent-state-liveness';
 import { sanitizeOpenClawDisplayText } from '../lib/openclaw-message-display';
 import { StarOfficeFallbackAdapter } from '../lib/star-office-fallback-adapter';
 
@@ -100,6 +104,44 @@ assert.equal(classifyOpenClawTool('browser.open'), 'researching');
 assert.equal(classifyOpenClawTool('apply_patch'), 'writing');
 assert.equal(classifyOpenClawTool('git_push'), 'syncing');
 assert.equal(classifyOpenClawTool('exec'), 'executing');
+
+const transientState = {
+  schemaVersion: 1,
+  eventId: 'openclaw:fixture:transient-state',
+  type: 'agent.state',
+  agentId: 'agent-scout',
+  source: 'openclaw',
+  observedAt: '2026-07-17T12:00:00.000Z',
+  sequence: 100,
+  state: 'syncing',
+  taskSummary: '开始处理任务',
+} as const;
+assert.deepEqual(
+  resolveAgentStateLiveness(
+    transientState,
+    Date.parse(transientState.observedAt) + 1000,
+  ),
+  {
+    state: 'syncing',
+    expiresInMs: TRANSIENT_AGENT_STATE_MAX_AGE_MS - 1000,
+  },
+);
+assert.deepEqual(
+  resolveAgentStateLiveness(
+    transientState,
+    Date.parse(transientState.observedAt) +
+      TRANSIENT_AGENT_STATE_MAX_AGE_MS,
+  ),
+  { state: 'idle', expiresInMs: 0 },
+);
+assert.deepEqual(
+  resolveAgentStateLiveness(
+    { ...transientState, state: 'error' },
+    Date.parse(transientState.observedAt) +
+      TRANSIENT_AGENT_STATE_MAX_AGE_MS * 2,
+  ),
+  { state: 'error', expiresInMs: null },
+);
 
 assert.equal(
   agentIncomingMessageNotice('Bonnie', 'Bonnie你在干嘛呀'),
