@@ -1,14 +1,14 @@
 # OC Kindergarten Development Plan
 
-## Next: OpenClaw plugin beta.3 multi-Agent credentials
+## Completed: OpenClaw plugin beta.3 multi-Agent credentials
 
-Status: prepared, not started. The production `syncing`/reply-bubble fix passed
-final regression in implementation commit `32b3a3d`; beta.3 may start next.
+Status: completed and accepted on production on 2026-07-23. Plugin tag
+`v0.5.0-beta.3` points to `8de9bd06e963`; `pi-home` is running that fixed tag.
 
 Goal: allow one OpenClaw Gateway to pair multiple Agents without one pairing
 overwriting another Agent's scoped credential.
 
-Preparation and acceptance scope:
+Implemented and accepted scope:
 
 1. Replace the plugin's single `token` setting with a credential store keyed by
    `provider + nativeAgentId` or stable binding identity.
@@ -25,6 +25,26 @@ Preparation and acceptance scope:
 6. Publish a fixed beta tag, upgrade `pi-home`, then repeat production
    acceptance with disposable Agents and complete cleanup.
 
-Release gate: until this scope passes, each Gateway may pair only one scoped
-Agent. Existing multi-Agent Gateways must remain on the legacy/internal global
-token and must not distribute that token to beta users.
+Release result: the single-scoped-Agent beta.2 gate is lifted for beta.3.
+Legacy/internal global tokens remain isolated compatibility credentials and
+must still not be distributed to beta users.
+
+## Next: beta.4 credential operations and reload ergonomics
+
+Goal: make credential state and Gateway activation obvious to operators without
+ever exposing secret values.
+
+Preparation and acceptance scope:
+
+1. Add a non-secret credential status command that lists only
+   `provider + nativeAgentId`, configuration source, and presence/absence.
+2. Make post-pair/post-unpair Gateway reload behavior explicit and testable.
+   OpenClaw CLI config mutation records restart intent, but a separately running
+   Gateway did not restart during beta.3 acceptance; onboarding currently
+   appends an explicit `openclaw gateway restart`.
+3. Add integration coverage for automatic beta.2 scoped-token migration on a
+   multi-Agent OpenClaw config, including network failure and retry guidance.
+4. Add install/update regression coverage for HTTPS Git tags on hosts without a
+   GitHub SSH key.
+5. Keep rotation, revoke isolation, restore/resume, deletion isolation, secret
+   redaction, and complete cleanup as release gates.

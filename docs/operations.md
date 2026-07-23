@@ -50,13 +50,45 @@ docker compose up -d --no-build --no-deps --force-recreate oc-kindergarten
 7. 删除专用 OpenClaw Agent／测试配置，并确认数据库与 pending outbox 没有 verification 残留。
 
 `v0.5.0-beta.2` 的插件配置只有一个 `token` 字段；同一 Gateway 再次配对会覆盖前一个 Agent 的
-scoped credential。修复为按 binding 保存多份 credential 前，每个 Gateway 只允许配对一个
-scoped Agent，不得用“安装一次后继续配对”的方式做多 Agent 灰度。已有多 Agent Gateway 应继续
-使用 legacy/internal 全局 token，且不得将该全局 token 分发给外部内测用户。
+scoped credential，因此该版本每个 Gateway 只允许配对一个 scoped Agent。`v0.5.0-beta.3`
+改为按 `openclaw:<nativeAgentId>` 保存多份 credential，已通过生产双 Agent、重启、轮换、
+撤销和删除隔离验收。legacy/internal 全局 token 仍只用于内部兼容，不得分发给外部内测用户。
 
 回滚应用时保留 `runtime_credentials` 表，不恢复或删除 PostgreSQL volume。旧应用会忽略新增表，
 但不支持 beta scoped credential；回滚期间应暂停 beta 配对和事件接入，不得把全局 Agent event
 token 分发给内测用户。恢复本版本后既有未撤销 credential 可继续使用。
+
+### Acceptance record: 2026-07-23 (beta.3 multi-Agent passed)
+
+- 插件固定标签 `v0.5.0-beta.3` 指向 `8de9bd06e96327859e8a2d830b2147a75948fc02`；
+  本机与 `pi-home` Node.js `22.22.3` 均通过 7 项插件测试，覆盖双 Agent 配对顺序、重启持久化、
+  单 Agent 轮换、未映射 scoped token 禁止 fallback、legacy/global 隔离和单 Agent 删除；
+- `pi-home` 升级前备份为
+  `/home/winnie/backups/openclaw-upgrades/openclaw-pre-beta3-20260723T135529Z.tgz`，
+  mode `0600`，SHA-256 为
+  `bda52e91d21ad44ff2b90223c5c11d86b08c1158211906c3cd2e69e38eec980d`；
+  插件通过公开 HTTPS Git fixed tag 安装，OpenClaw 仍为 `2026.7.1-2`；
+- disposable Agent `kg-beta3-a-20260723` 与 `kg-beta3-b-20260723` 在同一 Gateway 配对后，
+  配置中存在两个不同且格式正确的 credential。Gateway 重启后两者真实 OpenClaw turn 均成功，
+  生产数据库分别记录 `agent.presence`、`agent.state`、`agent.message`，最终均为 `idle` 且
+  回复气泡事件各 1 条；
+- 归档 A 后，A 的事件数保持 7 且 credential `last_used_at` 不变；B 的事件数从 6 增到 9
+  并保持 `idle`。restore 到 suspended、显式 resume 后，A 的事件数增到 11 且重新回到
+  `idle`，证明 archive/revoke 与恢复隔离通过；
+- `kg-beta3-rotate-20260723` 完成两次配对。pi-home 哈希比较确认 A/B credential 未变化、
+  目标 credential 已变化；生产数据库确认目标 binding 恰好保留 1 个 revoked 旧 credential
+  和 1 个 active 新 credential；
+- `kindergarten unpair --agent kg-beta3-a-20260723` 后，B 与轮换 Agent 的配置键仍存在；
+  删除本地 A 后 B 仍在 OpenClaw Agent 列表。验收退出后已删除三个 disposable Agent、
+  workspace、session、credential 配置和生产 enrollment/profile/binding/credential/event/
+  cursor/latest-state/outbox 数据；`kg-beta3-*` binding/enrollment 与 runtime credential 均为 0，
+  pending outbox 为 0；
+- 最终 `pi-home` Gateway PID 为 `376545`，RPC 正常，验收 credential 键为空，旧
+  legacy/internal 全局 token 保留，`main` 与 `encourager` discovery 均返回 `200`。结论为
+  “beta.3 多 Agent Gateway 灰度通过”，beta.2 的单 scoped Agent 限制解除；
+- 验收发现 OpenClaw CLI 的 config mutation 只记录 restart intent，独立运行的 Gateway
+  不会在每次 `pair` 后自动重启。onboarding 的配对命令因此显式追加
+  `openclaw gateway restart`；beta.4 继续收敛 reload 操作体验。
 
 ### Acceptance record: 2026-07-23 (conditional beta)
 
