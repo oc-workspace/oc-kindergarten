@@ -92,6 +92,11 @@ WHERE aggregate_id IN (
   JOIN agent_enrollments e ON e.id = p.enrollment_id
   WHERE e.parent_user_id IN (:'parent_id'::uuid, :'other_parent_id'::uuid)
 );
+DELETE FROM runtime_credentials
+WHERE binding_id IN (
+  SELECT id FROM provider_agent_bindings
+  WHERE provider = 'openclaw' AND native_agent_id = :'native_agent'
+);
 DELETE FROM provider_agent_bindings
 WHERE provider = 'openclaw' AND native_agent_id = :'native_agent';
 DELETE FROM agent_profiles
@@ -212,18 +217,45 @@ pair_json="$(jq -cn \
   --arg native_agent "${test_native_agent}" \
   '{schemaVersion:1,pairingCode:$pairing_code,discovery:{schemaVersion:1,provider:"openclaw",nativeAgentId:$native_agent,runtimeInstanceId:"verification-runtime",adapterVersion:"verification",profileDraft:{displayName:"Verification Agent",role:"Enrollment verification",capabilities:["verification"]}}}')"
 pair_result="$(curl -fsS -X POST \
-  -H "Authorization: Bearer ${agent_token}" \
   -H 'Content-Type: application/json' \
   --data-binary "${pair_json}" \
   "${PUBLIC_ORIGIN}/api/runtime/enrollments/pair")"
 test "$(printf '%s' "${pair_result}" | jq -r '.pairing.status')" = "pending_parent_confirmation"
+runtime_credential="$(printf '%s' "${pair_result}" | jq -er '.pairing.credential.token')"
+test "$(printf '%s' "${pair_result}" | jq -r '.pairing.credential.tokenType')" = "Bearer"
+printf '%s' "${runtime_credential}" | grep -Eq '^ockg_rt_[A-Za-z0-9_-]{43}$'
+
+credential_storage_count="$(docker compose exec -T postgres psql \
+  -U "${POSTGRES_USER:-oc_kindergarten_user}" \
+  -d "${POSTGRES_DB:-oc_kindergarten}" \
+  -v ON_ERROR_STOP=1 \
+  -v native_agent="${test_native_agent}" \
+  -v runtime_credential="${runtime_credential}" \
+  -At -c "SELECT count(*) FROM runtime_credentials c JOIN provider_agent_bindings b ON b.id = c.binding_id WHERE b.provider = 'openclaw' AND b.native_agent_id = :'native_agent' AND c.status = 'active' AND c.token_hash <> :'runtime_credential';")"
+test "${credential_storage_count}" = "1"
 
 reused_code_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-  -H "Authorization: Bearer ${agent_token}" \
   -H 'Content-Type: application/json' \
   --data-binary "${pair_json}" \
   "${PUBLIC_ORIGIN}/api/runtime/enrollments/pair")"
 test "${reused_code_status}" = "404"
+
+scoped_discovery_json="$(jq -cn \
+  --arg native_agent "${test_native_agent}" \
+  '{schemaVersion:1,provider:"openclaw",nativeAgentId:$native_agent,runtimeInstanceId:"verification-runtime",adapterVersion:"verification"}')"
+scoped_discovery_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${runtime_credential}" \
+  -H 'Content-Type: application/json' \
+  --data-binary "${scoped_discovery_json}" \
+  "${PUBLIC_ORIGIN}/api/runtime/agents/discover")"
+test "${scoped_discovery_status}" = "202"
+
+wrong_identity_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer ${runtime_credential}" \
+  -H 'Content-Type: application/json' \
+  --data-binary '{"schemaVersion":1,"provider":"openclaw","nativeAgentId":"another-agent"}' \
+  "${PUBLIC_ORIGIN}/api/runtime/agents/discover")"
+test "${wrong_identity_status}" = "401"
 
 other_parent_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "Cookie: ${other_session_cookie}" \
@@ -537,7 +569,6 @@ other_claim_pair_json="$(jq -cn \
   --arg native_agent "${test_native_agent}" \
   '{schemaVersion:1,pairingCode:$pairing_code,discovery:{schemaVersion:1,provider:"openclaw",nativeAgentId:$native_agent,profileDraft:{displayName:"Cross-owner claim"}}}')"
 other_claim_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-  -H "Authorization: Bearer ${agent_token}" \
   -H 'Content-Type: application/json' \
   --data-binary "${other_claim_pair_json}" \
   "${PUBLIC_ORIGIN}/api/runtime/enrollments/pair")"

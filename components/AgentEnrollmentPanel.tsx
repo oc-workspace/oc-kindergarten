@@ -66,6 +66,12 @@ const VARIANT_LABELS: Record<CharacterVariant, string> = {
   genderless: '无性别孩子外观',
 };
 
+const PLUGIN_BETA_VERSION = 'v0.5.0-beta.1';
+const PLUGIN_INSTALL_COMMAND = [
+  `openclaw plugins install 'git:ssh://git@github.com/oWinnieo/oc-kindergarten-openclaw-plugin.git#${PLUGIN_BETA_VERSION}' --force --pin`,
+  'openclaw plugins enable oc-kindergarten-bridge',
+].join('\n');
+
 function draftForActivation(enrollment: AgentEnrollment): ActivationDraft {
   const draft = enrollment.draftProfile;
   return {
@@ -219,6 +225,15 @@ export default function AgentEnrollmentPanel() {
     }
   };
 
+  const copyPluginInstallCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(PLUGIN_INSTALL_COMMAND);
+      setNotice('插件安装命令已复制。每台 OpenClaw 主机只需安装一次。');
+    } catch {
+      setNotice('浏览器无法复制，请手动复制插件安装命令。');
+    }
+  };
+
   const updateActivation = (
     enrollmentId: string,
     patch: Partial<ActivationDraft>,
@@ -301,6 +316,27 @@ export default function AgentEnrollmentPanel() {
       <p className="parentIntro">
         配对码只能使用一次，15 分钟后失效。Agent 提交的资料只是草稿，必须由你确认后才会公开。
       </p>
+
+      <div className="agentPairingBox agentPluginSetup">
+        <div>
+          <span className="agentPluginStep">首次使用 · Private beta</span>
+          <h3>先在 OpenClaw 主机安装入园插件</h3>
+        </div>
+        <p>
+          需要 OpenClaw 2026.7.1-2 或更高版本，以及内测仓库读取权限。同一台主机只安装一次；
+          以后添加更多 Agent 直接生成新的配对码。
+        </p>
+        <code className="agentPairingCommand">{PLUGIN_INSTALL_COMMAND}</code>
+        <div className="agentPairingActions">
+          <button
+            className="parentSecondaryAction"
+            type="button"
+            onClick={() => void copyPluginInstallCommand()}
+          >
+            复制插件安装命令
+          </button>
+        </div>
+      </div>
 
       {loading ? <p className="parentStatus">正在读取你的 Agent…</p> : null}
       {!loading && enrollments.length === 0 ? (

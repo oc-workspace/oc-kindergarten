@@ -335,6 +335,25 @@ button:focus-visible {
   background: #f5f7f5;
 }
 
+.agentPluginSetup {
+  margin-top: 22px;
+  border: 1px solid rgba(23, 50, 74, 0.12);
+  background: linear-gradient(135deg, #f4fbff, #f8f5ff);
+}
+
+.agentPluginSetup h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+}
+
+.agentPluginStep {
+  color: #5369a7;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .agentPairingBox p,
 .agentConfirmForm p,
 .agentActiveSummary p {
