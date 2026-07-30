@@ -1,3 +1,8 @@
+import type {
+  AgentAppearancePreset,
+  AgentCharacterVariant,
+} from './agent-registry-contract';
+
 export const AGENT_MOMENT_SCHEMA_VERSION = 1 as const;
 
 export const AGENT_SHARE_PROFILE_VISIBILITIES = [
@@ -36,6 +41,7 @@ export const AGENT_MOMENT_KINDS = [
 export const MAX_AGENT_MOMENT_ITEMS = 2;
 export const MAX_AGENT_MOMENT_TITLE_LENGTH = 80;
 export const MAX_AGENT_MOMENT_TEXT_LENGTH = 280;
+export const PUBLIC_AGENT_MOMENT_SLUG_PATTERN = /^[A-Za-z0-9_-]{32}$/;
 
 export type AgentShareProfileVisibility =
   (typeof AGENT_SHARE_PROFILE_VISIBILITIES)[number];
@@ -82,8 +88,8 @@ export interface PublicAgentMoment {
   shareSlug: string;
   agent: {
     displayName: string;
-    characterVariant: string;
-    appearancePreset: string;
+    characterVariant: AgentCharacterVariant;
+    appearancePreset: AgentAppearancePreset;
     color?: string;
   };
   title: string;
@@ -339,6 +345,13 @@ export function publicMomentContainsBannedField(value: unknown): boolean {
     ([key, child]) =>
       BANNED_PUBLIC_KEYS.has(key.replace(/[_-]/g, '').toLowerCase()) ||
       publicMomentContainsBannedField(child),
+  );
+}
+
+export function isPublicAgentMomentSlug(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    PUBLIC_AGENT_MOMENT_SLUG_PATTERN.test(value)
   );
 }
 

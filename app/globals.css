@@ -3246,6 +3246,334 @@ button:focus-visible {
   font-size: 12px;
 }
 
+.publicMomentShell {
+  width: min(100%, 1120px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0 32px 56px;
+}
+
+.publicMomentTopbar {
+  min-height: 76px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.publicMomentTopbar > a:last-child {
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.publicMomentLayout {
+  padding: 54px 0 40px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  align-items: start;
+  gap: 28px;
+}
+
+.publicMomentCard {
+  min-width: 0;
+  border: 1px solid rgba(23, 50, 74, 0.16);
+  border-radius: 24px;
+  padding: 34px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 92% 5%, rgba(245, 194, 92, 0.24), transparent 26%),
+    linear-gradient(145deg, #fffefa, #f5fbfc);
+  box-shadow: 0 20px 60px rgba(23, 50, 74, 0.1);
+}
+
+.publicMomentCard.template-progress {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(92, 192, 167, 0.2), transparent 26%),
+    linear-gradient(145deg, #fffefa, #f1fbf8);
+}
+
+.publicMomentCard.template-achievement {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(245, 194, 92, 0.3), transparent 27%),
+    linear-gradient(145deg, #fffefa, #fdf7e8);
+}
+
+.publicMomentCard.template-recovery {
+  background:
+    radial-gradient(circle at 92% 5%, rgba(182, 133, 199, 0.2), transparent 27%),
+    linear-gradient(145deg, #fffefa, #faf5fb);
+}
+
+.publicMomentCardHeader {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: center;
+  gap: 26px;
+}
+
+.publicMomentPortrait {
+  width: 120px;
+  height: 160px;
+  border: 1px solid rgba(23, 50, 74, 0.12);
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, #eaf1ed 25%, transparent 25%),
+    linear-gradient(-45deg, #eaf1ed 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eaf1ed 75%),
+    linear-gradient(-45deg, transparent 75%, #eaf1ed 75%),
+    rgba(255, 255, 255, 0.75);
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-size: 20px 20px;
+}
+
+.publicMomentPortrait img {
+  width: 120px;
+  height: 160px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.publicMomentIdentity {
+  min-width: 0;
+}
+
+.publicMomentIdentity h1 {
+  overflow-wrap: anywhere;
+  margin: 6px 0 12px;
+  font-size: clamp(28px, 4.5vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.publicMomentIdentity > p:not(.eyebrow) {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.publicMomentIdentity > time {
+  color: #637b87;
+  font-size: 12px;
+}
+
+.publicMomentCaption {
+  position: relative;
+  margin: 32px 0 6px;
+  border-left: 3px solid #efb34f;
+  padding: 18px 22px 18px 38px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink);
+}
+
+.publicMomentCaption > span {
+  position: absolute;
+  top: 5px;
+  left: 13px;
+  color: #d89b36;
+  font-family: Georgia, serif;
+  font-size: 42px;
+  line-height: 1;
+}
+
+.publicMomentCaption p {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.publicMomentItems {
+  margin: 30px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  list-style: none;
+}
+
+.publicMomentItems li {
+  min-width: 0;
+  border-top: 1px solid rgba(23, 50, 74, 0.12);
+  padding-top: 18px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.publicMomentItemNumber {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.publicMomentItemHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.publicMomentItemHeading > span {
+  color: var(--blue);
+}
+
+.publicMomentItems h2 {
+  overflow-wrap: anywhere;
+  margin: 7px 0 5px;
+  font-size: 18px;
+  letter-spacing: 0;
+}
+
+.publicMomentItems p {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: #496371;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.publicMomentShare {
+  position: sticky;
+  top: 24px;
+  border: 1px solid rgba(23, 50, 74, 0.14);
+  border-radius: 18px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.publicMomentShare h2 {
+  margin: 5px 0 10px;
+  font-size: 22px;
+  letter-spacing: 0;
+}
+
+.publicMomentShare > div:first-child > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.publicMomentShareActions {
+  margin-top: 20px;
+  display: grid;
+  gap: 9px;
+}
+
+.publicMomentPrimaryAction,
+.publicMomentSecondaryAction,
+.publicMomentShare .agentMomentTextAction {
+  min-height: 42px;
+  border-radius: 9px;
+  padding: 9px 15px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.publicMomentPrimaryAction {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.publicMomentSecondaryAction,
+.publicMomentShare .agentMomentTextAction {
+  border: 1px solid rgba(23, 50, 74, 0.18);
+  background: #fff;
+  color: var(--ink);
+}
+
+.publicMomentPrimaryAction:disabled,
+.publicMomentSecondaryAction:disabled,
+.publicMomentShare .agentMomentTextAction:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.publicMomentShareStatus {
+  min-height: 18px;
+  margin: 12px 0 0;
+  color: #277154;
+  font-size: 12px;
+}
+
+.publicMomentShare .agentMomentQr {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.publicMomentShare .agentMomentQr img {
+  width: min(192px, 100%);
+  height: auto;
+}
+
+.publicMomentShare .agentMomentQr a {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.publicMomentFooter {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.publicMomentFooter p {
+  margin: 0;
+}
+
+.publicMomentFooter a {
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.publicMomentNotFound > section {
+  width: min(620px, 100%);
+  margin: 11vh auto 0;
+  border: 1px solid rgba(23, 50, 74, 0.14);
+  border-radius: 20px;
+  padding: 42px;
+  background: rgba(255, 255, 255, 0.82);
+  text-align: center;
+}
+
+.publicMomentNotFound h1 {
+  margin: 7px 0 13px;
+  font-size: clamp(28px, 5vw, 40px);
+}
+
+.publicMomentNotFound section > p:not(.eyebrow) {
+  margin: 0 auto 24px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
 @media (max-width: 1040px) {
   .simulationShell {
     grid-template-columns: 1fr;
@@ -3253,6 +3581,14 @@ button:focus-visible {
 
   .agentPanel {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .publicMomentLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .publicMomentShare {
+    position: static;
   }
 }
 
@@ -3282,6 +3618,19 @@ button:focus-visible {
   .agentPanel,
   .runtimeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .publicMomentShell {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .publicMomentLayout {
+    padding-top: 32px;
+  }
+
+  .publicMomentCard {
+    padding: 26px;
   }
 }
 
@@ -3361,6 +3710,76 @@ button:focus-visible {
   .siteFooter {
     margin-right: 16px;
     margin-left: 16px;
+  }
+
+  .publicMomentShell {
+    width: 100%;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .publicMomentTopbar {
+    min-height: 64px;
+  }
+
+  .publicMomentLayout {
+    padding-top: 20px;
+    gap: 16px;
+  }
+
+  .publicMomentCard {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .publicMomentCardHeader {
+    grid-template-columns: 80px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .publicMomentPortrait,
+  .publicMomentPortrait img {
+    width: 80px;
+    height: 108px;
+  }
+
+  .publicMomentIdentity h1 {
+    margin-top: 4px;
+    font-size: 27px;
+  }
+
+  .publicMomentIdentity > p:not(.eyebrow) {
+    font-size: 12px;
+  }
+
+  .publicMomentCaption {
+    margin-top: 22px;
+    padding-right: 14px;
+  }
+
+  .publicMomentItems {
+    margin-top: 22px;
+  }
+
+  .publicMomentItemHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .publicMomentShare {
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  .publicMomentFooter {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .publicMomentNotFound > section {
+    margin-top: 8vh;
+    padding: 30px 20px;
   }
 }
 

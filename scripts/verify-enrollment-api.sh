@@ -574,6 +574,13 @@ test "$(printf '%s' "${moment_create_result}" | jq -r '.moment.visibility')" = "
 test "$(printf '%s' "${moment_create_result}" | jq -r '.moment.items | length')" = "2"
 test "$(printf '%s' "${moment_create_result}" | jq -r '.moment.items[0].occurredAt <= .moment.items[1].occurredAt')" = "true"
 
+invalid_public_api_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/public/moments/not-a-valid-share-slug")"
+invalid_public_page_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/moments/not-a-valid-share-slug")"
+test "${invalid_public_api_status}" = "404"
+test "${invalid_public_page_status}" = "404"
+
 private_publish_status="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
   -H "Cookie: ${session_cookie}" \
   -H "Origin: ${PUBLIC_ORIGIN}" \
@@ -616,6 +623,41 @@ moment_share_slug="$(printf '%s' "${moment_publish_result}" | jq -er '.moment.sh
 test "$(printf '%s' "${moment_publish_result}" | jq -r '.moment.status')" = "published"
 test "${#moment_share_slug}" = "32"
 
+public_moment_result="$(curl -fsS \
+  "${PUBLIC_ORIGIN}/api/public/moments/${moment_share_slug}")"
+test "$(printf '%s' "${public_moment_result}" | jq -r '.moment.shareSlug')" = "${moment_share_slug}"
+test "$(printf '%s' "${public_moment_result}" | jq -r '.moment.visibility')" = "unlisted"
+test "$(printf '%s' "${public_moment_result}" | jq -r '.moment.title')" = "第一次成长记录"
+test "$(printf '%s' "${public_moment_result}" | jq -r '.moment.items | length')" = "2"
+printf '%s' "${public_moment_result}" | jq -e '
+  (.moment | keys | sort) ==
+    (["agent","items","ownerCaption","publishedAt","schemaVersion","shareSlug","template","title","visibility"] | sort) and
+  (.moment.agent | keys | sort) ==
+    (["appearancePreset","characterVariant","color","displayName"] | sort) and
+  ([.moment.items[] | keys | sort] | all(. ==
+    (["detail","kind","occurredAt","position","title"] | sort))) and
+  ([.moment | .. | objects | keys[]] | all(
+    . != "ownerId" and . != "agentId" and . != "momentId" and
+    . != "eventId" and . != "cursor" and . != "source" and
+    . != "provider" and . != "runtimeInstanceId" and
+    . != "sessionId" and . != "requestId" and
+    . != "metadata" and . != "payload"
+  ))
+' >/dev/null
+public_unlisted_page="$(curl -fsS \
+  "${PUBLIC_ORIGIN}/moments/${moment_share_slug}")"
+printf '%s' "${public_unlisted_page}" | grep -Fq '第一次成长记录'
+printf '%s' "${public_unlisted_page}" | grep -Fq 'noindex'
+for private_value in \
+  "${parent_id}" "${moment_id}" "${agent_id}" \
+  "${agent_token}" "${runtime_credential}"; do
+  if printf '%s' "${public_moment_result}${public_unlisted_page}" | \
+    grep -Fq -- "${private_value}"; then
+    echo "Public moment leaked a private identifier or credential" >&2
+    exit 1
+  fi
+done
+
 other_parent_moment_get_status="$(curl -sS -o /dev/null -w '%{http_code}' \
   -H "Cookie: ${other_session_cookie}" \
   "${PUBLIC_ORIGIN}/api/agent-moments/${moment_id}")"
@@ -635,6 +677,12 @@ published_patch_result="$(curl -fsS -X PATCH \
 test "$(printf '%s' "${published_patch_result}" | jq -r '.moment.status')" = "draft"
 test "$(printf '%s' "${published_patch_result}" | jq -r '.moment.visibility')" = "private"
 test "$(printf '%s' "${published_patch_result}" | jq -r '.moment.shareSlug')" = "${moment_share_slug}"
+draft_public_api_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/public/moments/${moment_share_slug}")"
+draft_public_page_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/moments/${moment_share_slug}")"
+test "${draft_public_api_status}" = "404"
+test "${draft_public_page_status}" = "404"
 
 republish_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
@@ -643,6 +691,13 @@ republish_result="$(curl -fsS -X POST \
   --data-binary '{"visibility":"public"}' \
   "${PUBLIC_ORIGIN}/api/agent-moments/${moment_id}/publish")"
 test "$(printf '%s' "${republish_result}" | jq -r '.moment.shareSlug')" = "${moment_share_slug}"
+public_indexable_page="$(curl -fsS \
+  "${PUBLIC_ORIGIN}/moments/${moment_share_slug}")"
+printf '%s' "${public_indexable_page}" | grep -Fq '修改后的成长记录'
+if printf '%s' "${public_indexable_page}" | grep -Fq 'noindex'; then
+  echo "Public moment unexpectedly emitted noindex" >&2
+  exit 1
+fi
 
 revoke_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
@@ -651,6 +706,12 @@ revoke_result="$(curl -fsS -X POST \
   --data-binary '{}' \
   "${PUBLIC_ORIGIN}/api/agent-moments/${moment_id}/revoke")"
 test "$(printf '%s' "${revoke_result}" | jq -r '.moment.status')" = "revoked"
+revoked_public_api_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/public/moments/${moment_share_slug}")"
+revoked_public_page_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/moments/${moment_share_slug}")"
+test "${revoked_public_api_status}" = "404"
+test "${revoked_public_page_status}" = "404"
 
 duplicate_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
@@ -670,6 +731,9 @@ duplicate_publish_result="$(curl -fsS -X POST \
   --data-binary '{"visibility":"unlisted"}' \
   "${PUBLIC_ORIGIN}/api/agent-moments/${duplicate_moment_id}/publish")"
 test "$(printf '%s' "${duplicate_publish_result}" | jq -r '.moment.status')" = "published"
+duplicate_share_slug="$(printf '%s' "${duplicate_publish_result}" | jq -er '.moment.shareSlug')"
+test "$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/public/moments/${duplicate_share_slug}")" = "200"
 
 private_share_settings_result="$(curl -fsS -X PATCH \
   -H "Cookie: ${session_cookie}" \
@@ -684,6 +748,12 @@ private_transitioned_moment="$(curl -fsS \
   "${PUBLIC_ORIGIN}/api/agent-moments/${duplicate_moment_id}")"
 test "$(printf '%s' "${private_transitioned_moment}" | jq -r '.moment.status')" = "draft"
 test "$(printf '%s' "${private_transitioned_moment}" | jq -r '.moment.visibility')" = "private"
+private_setting_public_api_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/api/public/moments/${duplicate_share_slug}")"
+private_setting_public_page_status="$(curl -sS -o /dev/null -w '%{http_code}' \
+  "${PUBLIC_ORIGIN}/moments/${duplicate_share_slug}")"
+test "${private_setting_public_api_status}" = "404"
+test "${private_setting_public_page_status}" = "404"
 
 archive_result="$(curl -fsS -X POST \
   -H "Cookie: ${session_cookie}" \
@@ -831,3 +901,4 @@ printf 'owner_archive_restore_and_identity_guard=passed\n'
 printf 'scoped_credential_archive_restore_guard=passed\n'
 printf 'owner_activity_timeline_privacy_and_pagination=passed\n'
 printf 'owner_agent_moment_settings_state_machine_and_isolation=passed\n'
+printf 'public_agent_moment_anonymous_page_and_privacy=passed\n'
