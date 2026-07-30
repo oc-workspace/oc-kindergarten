@@ -4,9 +4,15 @@ import { useState } from 'react';
 
 interface AgentMomentQrCodeProps {
   url: string;
+  alt?: string;
+  downloadName?: string;
 }
 
-export default function AgentMomentQrCode({ url }: AgentMomentQrCodeProps) {
+export default function AgentMomentQrCode({
+  url,
+  alt = '成长瞬间分享二维码',
+  downloadName = 'agent-moment.png',
+}: AgentMomentQrCodeProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [phase, setPhase] = useState<'idle' | 'loading' | 'ready' | 'error'>(
     'idle',
@@ -38,8 +44,8 @@ export default function AgentMomentQrCode({ url }: AgentMomentQrCodeProps) {
     return (
       <div className="agentMomentQr">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={dataUrl} alt="成长瞬间分享二维码" width={192} height={192} />
-        <a download="agent-moment.png" href={dataUrl}>
+        <img src={dataUrl} alt={alt} width={192} height={192} />
+        <a download={downloadName} href={dataUrl}>
           下载二维码
         </a>
       </div>
@@ -61,4 +67,3 @@ export default function AgentMomentQrCode({ url }: AgentMomentQrCodeProps) {
     </button>
   );
 }
-

@@ -14,8 +14,14 @@ import {
 import { parseAgentRuntimeEvent } from './agent-event-contract';
 import {
   AGENT_MOMENT_SCHEMA_VERSION,
+  AGENT_MOMENT_KINDS,
+  AGENT_MOMENT_PUBLISH_VISIBILITIES,
+  AGENT_MOMENT_TEMPLATES,
+  MAX_AGENT_MOMENT_ITEMS,
   MAX_AGENT_MOMENT_TEXT_LENGTH,
   MAX_AGENT_MOMENT_TITLE_LENGTH,
+  isPublicAgentMomentSlug,
+  publicMomentContainsBannedField,
   type AgentMomentPublishVisibility,
   type AgentMomentStatus,
   type AgentMomentTemplate,
@@ -24,6 +30,8 @@ import {
   type AgentShareSettingsPatch,
   type CreateAgentMomentInput,
   type PatchAgentMomentInput,
+  type PublicAgentMoment,
+  type PublicAgentMomentItem,
 } from './agent-moment-contract';
 import type {
   OwnerAgentMoment,
@@ -35,6 +43,12 @@ import {
   mapMomentCandidate,
   sanitizeMomentText,
 } from './agent-moment-sanitizer';
+import {
+  AGENT_APPEARANCE_PRESETS,
+  AGENT_CHARACTER_VARIANTS,
+  type AgentAppearancePreset,
+  type AgentCharacterVariant,
+} from './agent-registry-contract';
 import { getDatabaseClient } from './db/client';
 import {
   agentEnrollments,
@@ -119,6 +133,139 @@ function isUuid(value: unknown): value is string {
       value,
     )
   );
+}
+
+function includesValue<T extends string>(
+  values: readonly T[],
+  value: unknown,
+): value is T {
+  return typeof value === 'string' && values.includes(value as T);
+}
+
+function safePublicText(
+  value: unknown,
+  maximum: number,
+): string | null {
+  const sanitized = sanitizeMomentText(value, { maximum });
+  return sanitized.status === 'accepted' ? sanitized.text : null;
+}
+
+interface PublicMomentSnapshot {
+  shareSlug: string;
+  displayName: string;
+  characterVariant: string;
+  appearancePreset: string;
+  color: string | null;
+  title: string;
+  ownerCaption: string | null;
+  template: string;
+  visibility: string;
+  publishedAt: Date;
+  items: Array<{
+    position: number;
+    kind: string;
+    title: string;
+    detail: string;
+    occurredAt: Date;
+  }>;
+}
+
+export function buildPublicAgentMoment(
+  snapshot: PublicMomentSnapshot,
+): PublicAgentMoment | null {
+  if (
+    !isPublicAgentMomentSlug(snapshot.shareSlug) ||
+    !includesValue(
+      AGENT_CHARACTER_VARIANTS,
+      snapshot.characterVariant,
+    ) ||
+    !includesValue(
+      AGENT_APPEARANCE_PRESETS,
+      snapshot.appearancePreset,
+    ) ||
+    !includesValue(AGENT_MOMENT_TEMPLATES, snapshot.template) ||
+    !includesValue(
+      AGENT_MOMENT_PUBLISH_VISIBILITIES,
+      snapshot.visibility,
+    ) ||
+    Number.isNaN(snapshot.publishedAt.getTime()) ||
+    snapshot.items.length < 1 ||
+    snapshot.items.length > MAX_AGENT_MOMENT_ITEMS
+  ) {
+    return null;
+  }
+  const displayName = safePublicText(snapshot.displayName, 48);
+  const title = safePublicText(
+    snapshot.title,
+    MAX_AGENT_MOMENT_TITLE_LENGTH,
+  );
+  const ownerCaption = snapshot.ownerCaption
+    ? safePublicText(
+        snapshot.ownerCaption,
+        MAX_AGENT_MOMENT_TEXT_LENGTH,
+      )
+    : undefined;
+  if (
+    !displayName ||
+    !title ||
+    (snapshot.ownerCaption !== null && !ownerCaption) ||
+    (snapshot.color !== null &&
+      !/^#[0-9a-fA-F]{6}$/.test(snapshot.color))
+  ) {
+    return null;
+  }
+  const items: PublicAgentMomentItem[] = [];
+  const seenPositions = new Set<number>();
+  for (const item of snapshot.items) {
+    const itemTitle = safePublicText(
+      item.title,
+      MAX_AGENT_MOMENT_TITLE_LENGTH,
+    );
+    const detail = safePublicText(
+      item.detail,
+      MAX_AGENT_MOMENT_TEXT_LENGTH,
+    );
+    if (
+      (item.position !== 1 && item.position !== 2) ||
+      seenPositions.has(item.position) ||
+      !includesValue(AGENT_MOMENT_KINDS, item.kind) ||
+      !itemTitle ||
+      !detail ||
+      Number.isNaN(item.occurredAt.getTime())
+    ) {
+      return null;
+    }
+    seenPositions.add(item.position);
+    items.push({
+      position: item.position,
+      kind: item.kind,
+      title: itemTitle,
+      detail,
+      occurredAt: item.occurredAt.toISOString(),
+    });
+  }
+  items.sort((left, right) => left.position - right.position);
+  const moment: PublicAgentMoment = {
+    schemaVersion: AGENT_MOMENT_SCHEMA_VERSION,
+    shareSlug: snapshot.shareSlug,
+    agent: {
+      displayName,
+      characterVariant:
+        snapshot.characterVariant as AgentCharacterVariant,
+      appearancePreset:
+        snapshot.appearancePreset as AgentAppearancePreset,
+      ...(snapshot.color
+        ? { color: snapshot.color.toLowerCase() }
+        : {}),
+    },
+    title,
+    ...(ownerCaption ? { ownerCaption } : {}),
+    template: snapshot.template,
+    visibility: snapshot.visibility,
+    publishedAt: snapshot.publishedAt.toISOString(),
+    items,
+  };
+  return publicMomentContainsBannedField(moment) ? null : moment;
 }
 
 export function parseOwnerAgentMomentPageQuery(search: URLSearchParams):
@@ -580,6 +727,87 @@ export async function getOwnerAgentMoment(
     1,
   );
   return (await hydrateOwnerMoments(rows))[0] ?? null;
+}
+
+export async function getPublicAgentMoment(
+  shareSlug: string,
+): Promise<PublicAgentMoment | null> {
+  if (!isPublicAgentMomentSlug(shareSlug)) return null;
+  const { database } = getDatabaseClient();
+  const rows = await database
+    .select({
+      shareSlug: agentMoments.shareSlug,
+      title: agentMoments.title,
+      ownerCaption: agentMoments.ownerCaption,
+      template: agentMoments.template,
+      visibility: agentMoments.visibility,
+      publishedAt: agentMoments.publishedAt,
+      displayName: agentProfiles.displayName,
+      characterVariant: agentProfiles.characterVariant,
+      appearancePreset: agentProfiles.appearancePreset,
+      color: agentProfiles.color,
+      itemPosition: agentMomentItems.position,
+      itemKind: agentMomentItems.kind,
+      itemTitle: agentMomentItems.titleSnapshot,
+      itemDetail: agentMomentItems.detailSnapshot,
+      itemOccurredAt: agentMomentItems.occurredAtSnapshot,
+    })
+    .from(agentMoments)
+    .innerJoin(
+      agentProfiles,
+      and(
+        eq(agentProfiles.agentId, agentMoments.agentId),
+        eq(agentProfiles.ownerId, agentMoments.ownerId),
+      ),
+    )
+    .innerJoin(
+      agentEnrollments,
+      and(
+        eq(agentEnrollments.id, agentProfiles.enrollmentId),
+        eq(agentEnrollments.parentUserId, agentMoments.ownerId),
+      ),
+    )
+    .innerJoin(
+      agentShareSettings,
+      and(
+        eq(agentShareSettings.agentId, agentMoments.agentId),
+        eq(agentShareSettings.ownerId, agentMoments.ownerId),
+      ),
+    )
+    .innerJoin(
+      agentMomentItems,
+      eq(agentMomentItems.momentId, agentMoments.id),
+    )
+    .where(
+      and(
+        eq(agentMoments.shareSlug, shareSlug),
+        eq(agentMoments.status, 'published'),
+        inArray(agentMoments.visibility, ['unlisted', 'public']),
+        eq(agentShareSettings.profileVisibility, 'public'),
+      ),
+    )
+    .orderBy(asc(agentMomentItems.position));
+  const row = rows[0];
+  if (!row?.shareSlug || !row.publishedAt) return null;
+  return buildPublicAgentMoment({
+    shareSlug: row.shareSlug,
+    displayName: row.displayName,
+    characterVariant: row.characterVariant,
+    appearancePreset: row.appearancePreset,
+    color: row.color,
+    title: row.title,
+    ownerCaption: row.ownerCaption,
+    template: row.template,
+    visibility: row.visibility,
+    publishedAt: row.publishedAt,
+    items: rows.map((item) => ({
+      position: item.itemPosition,
+      kind: item.itemKind,
+      title: item.itemTitle,
+      detail: item.itemDetail,
+      occurredAt: item.itemOccurredAt,
+    })),
+  });
 }
 
 function assertOwnerText(

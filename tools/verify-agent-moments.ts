@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   AGENT_MOMENT_SCHEMA_VERSION,
   encodePublicAgentMomentCursor,
+  isPublicAgentMomentSlug,
   parseAgentShareSettingsPatch,
   parseCreateAgentMoment,
   parsePatchAgentMoment,
@@ -16,7 +17,10 @@ import {
   sanitizeMomentText,
 } from '../lib/agent-moment-sanitizer';
 import type { AgentRuntimeEvent } from '../lib/agent-event-contract';
-import { parseOwnerAgentMomentPageQuery } from '../lib/agent-moments';
+import {
+  buildPublicAgentMoment,
+  parseOwnerAgentMomentPageQuery,
+} from '../lib/agent-moments';
 import {
   consumesOwnerMutationAllowance,
   hasSameOrigin,
@@ -256,6 +260,9 @@ const publicMoment: PublicAgentMoment = {
     },
   ],
 };
+assert.equal(isPublicAgentMomentSlug(publicMoment.shareSlug), true);
+assert.equal(isPublicAgentMomentSlug('short'), false);
+assert.equal(isPublicAgentMomentSlug(`${'A'.repeat(31)}!`), false);
 assert.equal(publicMomentContainsBannedField(publicMoment), false);
 assert.equal(
   publicMomentContainsBannedField({
@@ -263,6 +270,60 @@ assert.equal(
     payload: { prompt: 'private' },
   }),
   true,
+);
+
+const publicSnapshot = {
+  shareSlug: publicMoment.shareSlug,
+  displayName: '小助手',
+  characterVariant: 'genderless',
+  appearancePreset: 'classic',
+  color: '#29a06f',
+  title: '今天完成了一件事',
+  ownerCaption: '继续加油',
+  template: 'achievement',
+  visibility: 'unlisted',
+  publishedAt: new Date(observedAt),
+  items: [
+    {
+      position: 1,
+      kind: 'completion',
+      title: '完成了一次活动',
+      detail: '已经回到自由活动',
+      occurredAt: new Date(observedAt),
+    },
+  ],
+};
+assert.deepEqual(buildPublicAgentMoment(publicSnapshot), {
+  ...publicMoment,
+  agent: {
+    ...publicMoment.agent,
+    color: '#29a06f',
+  },
+  ownerCaption: '继续加油',
+});
+assert.equal(
+  buildPublicAgentMoment({
+    ...publicSnapshot,
+    ownerCaption: '联系 test@example.com',
+  }),
+  null,
+);
+assert.equal(
+  buildPublicAgentMoment({
+    ...publicSnapshot,
+    characterVariant: 'private-provider-variant',
+  }),
+  null,
+);
+assert.equal(
+  buildPublicAgentMoment({
+    ...publicSnapshot,
+    items: [
+      publicSnapshot.items[0],
+      { ...publicSnapshot.items[0] },
+    ],
+  }),
+  null,
 );
 assert.equal(
   publicMomentContainsBannedField({
