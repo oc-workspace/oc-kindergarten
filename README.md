@@ -51,6 +51,8 @@ yarn db:migrate
 
 归档恢复部署、回滚以及管理员、Agent event、NextAuth 和 Casdoor secret 轮换步骤见
 [`docs/operations.md`](docs/operations.md)。
+dev/prod 数据库隔离、Casdoor 身份复用和用户资料单向迁移方案见
+[`docs/dev-to-prod-user-migration.md`](docs/dev-to-prod-user-migration.md)。
 后续开发顺序与发布门槛见 [`docs/development-plan.md`](docs/development-plan.md)。
 
 OpenClaw 生产接入推荐使用 bridge v2：插件配置 `identityMode: "server"`，不配置静态
