@@ -1,6 +1,6 @@
 # Dev → Prod 用户身份与资料迁移参考
 
-状态：已确认的迁移原则，待生产环境隔离完成后执行。  
+状态：隔离保护、内测资格记录和迁移工具已实现；待生产环境配置完成后演练与执行。
 记录日期：2026-08-02。
 
 ## 1. 已确认的决定
@@ -25,8 +25,8 @@ Kindergarten 资料。它不表示 dev 与 prod 长期共用同一个业务数�
 - 当前只有一套正在运行的 Kindergarten PostgreSQL；
 - dev 有 `.env` 并正在运行；prod 没有独立 `.env`，也没有独立 prod 容器或数据库。
 
-因此，**当前 prod 不是一个已隔离、可安全启动的生产环境**。在完成下列隔离前，不得直接在 prod
-目录执行 `docker compose up`：
+因此，**当前 prod 不是一个已隔离、可安全启动的生产环境**。仓库现在会强制校验以下值；prod 的
+独立凭据、域名和数据目录准备好以前，不得直接在 prod 目录执行 `docker compose up`：
 
 - Compose 项目名改为 `oc-kindergarten-dev` 与 `oc-kindergarten-prod`；
 - PostgreSQL 数据目录改为：
@@ -61,11 +61,15 @@ Casdoor OAuth Client ID/Secret 与回调地址；客户端可以不同，issuer/
 
 ## 4. 本次默认迁移范围
 
-默认只迁移 Kindergarten 用户资料：
+默认只迁移已明确选择加入迁移清单的 Kindergarten 用户资料及其选择记录：
 
 ```text
 parent_users
+beta_participants
 ```
+
+候选范围固定为 `beta_participants.migration_eligible = true` 且
+`acknowledged_at IS NOT NULL`。没有记录或未勾选的内测用户不会被工具选中。
 
 默认不迁移：
 
@@ -108,24 +112,38 @@ event_outbox
 - [ ] prod 数据库已创建可恢复备份，并验证备份文件非空；
 - [ ] dev 数据库已创建迁移前备份；
 - [ ] Casdoor prod 客户端回调域名正确，issuer 与 dev 一致；
-- [ ] 确认要迁移的内测用户范围，并告知用户资料将进入正式环境；
+- [ ] 冻结 `beta_participants` 迁移资格选择，并确认每个候选都有告知版本和确认时间；
 - [ ] prod 尚无同 identity 的冲突资料，或冲突处理规则已经人工批准；
 - [ ] 已在一次性数据库副本完成迁移演练和登录验收；
 - [ ] 已准备回滚负责人、回滚命令和最长允许停写时间。
 
 ## 6. 推荐执行流程
 
-### 6.1 先实现专用迁移工具
+### 6.1 专用迁移工具
 
-正式执行前，在仓库中实现并审查一个只处理 `parent_users` 的迁移工具。工具至少应支持：
+仓库提供 `scripts/migrate-parent-users.mjs`（`yarn users:migrate`），只处理符合资格的
+`parent_users` 和对应 `beta_participants`。工具已经实现：
 
-- `--source` 与 `--target` 使用独立连接配置，但不得在日志打印连接字符串；
-- `--dry-run` 只输出数量、冲突类型和匿名化摘要；
+- `SOURCE_DATABASE_URL` 与 `TARGET_DATABASE_URL` 使用独立环境变量，且不得指向同一 endpoint；
+- 默认或 `--dry-run` 只输出数量和冲突类型；
 - 按 `(oidc_issuer, oidc_subject)` 检测冲突；
 - 保留原 `parent_users.id`，并在 UUID 冲突时停止；
 - 在单个 prod 数据库事务中导入，任何错误整体回滚；
-- 输出迁移批次清单、源/目标数量和校验结果，不输出邮箱全文或 subject；
+- 输出源/目标数量和校验结果，不输出邮箱、subject 或连接字符串；
 - 默认拒绝覆盖 prod 已被用户修改的字段；覆盖策略必须显式指定并经过批准。
+
+dry-run 示例：
+
+```bash
+SOURCE_KINDERGARTEN_ENV=dev \
+TARGET_KINDERGARTEN_ENV=prod \
+SOURCE_DATABASE_URL='postgresql://...' \
+TARGET_DATABASE_URL='postgresql://...' \
+yarn users:migrate --dry-run
+```
+
+正式执行还必须输入 `--apply --confirm=MIGRATE_ELIGIBLE_BETA_PARENTS`。不要在 shell history 中
+直接填写真实密码；上线时应由受控 secret 注入环境变量。
 
 不要把两个数据库的明文密码写入命令历史、日志或迁移产物。
 
@@ -144,7 +162,7 @@ event_outbox
 2. 记录 dev/prod Git commit、镜像 ID、数据库迁移版本和时间。
 3. 分别备份 dev 与 prod，备份权限设为 `0600`，记录恢复命令。
 4. 执行迁移工具 `--dry-run`；结果与演练预期不一致时停止。
-5. 在 prod 事务中迁移 `parent_users`。
+5. 使用固定确认短语，在 prod 事务中迁移符合资格的 `parent_users` 与选择记录。
 6. 执行第 7 节验证。
 7. 让一个迁移用户登录 prod，确认系统识别为原 UUID，并能看到原展示名、头像、时区和语言。
 8. 开放 prod；用户需要重新登录，不迁移旧会话。
@@ -181,6 +199,7 @@ FROM parent_users;
 - prod 不存在 UUID 对应不同 identity 的情况；
 - prod 登录后 NextAuth session 中的 `parentUserId` 等于迁移 UUID；
 - 展示名、头像、时区、语言与批准的迁移快照一致；
+- 每个迁移 UUID 在 prod 有一条对应 `beta_participants`，且告知版本与首次确认时间保留；
 - 数据库日志、应用日志和迁移报告中没有密码、token、完整 subject 或不必要的个人资料。
 
 ## 8. 回滚
